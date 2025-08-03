@@ -42,7 +42,7 @@ def basic_arithmetic_page(page: ft.Page):
     page.appbar = ft.AppBar(
         leading=ft.IconButton(
             ft.Icons.ARROW_BACK,
-            on_click=lambda e: page.go("/maths")
+            on_click=lambda e: page.go_back()  # Use page.go_back() for root page navigation
         ),
         title=ft.Text("Basic Arithmetic"),
         bgcolor=ft.Colors.BLUE_700,
@@ -53,11 +53,42 @@ def basic_arithmetic_page(page: ft.Page):
     page.add(module.create_main_view())
 
 class BasicArithmeticModule:
-    def __init__(self, page):
+    def __init__(self, page=None):
         self.page = page
         self.current_quiz_level = "basic"
         self.quiz_score = 0
         self.quiz_question_index = 0
+        
+    def show_page(self):
+        """Main entry point for the module"""
+        self.show_main_page()
+        
+    def show_main_page(self, page=None):
+        """Show the main basic arithmetic page
+        Args:
+            page: Optional page reference. If not provided, uses self.page
+        """
+        if page is None:
+            page = self.page
+        self.page = page  # Update the page reference
+            
+        view = ft.View(
+            "/basic_arithmetic",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
+                    title=ft.Text("Basic Arithmetic"),
+                    bgcolor=ft.Colors.BLUE_700,
+                    center_title=True
+                ),
+                self.create_main_view()
+            ]
+        )
+        
+        # Clear existing views and show main view
+        page.views.clear()
+        page.views.append(view)
+        page.update()
         self.current_correct_index = 0
         self.current_shuffled_options = []  # Store shuffled options for feedback
         
@@ -257,25 +288,8 @@ class BasicArithmeticModule:
             expand=True
         )
 
-    # Navigation helper methods
-    def go_back_to_main(self):
-        """Navigate back to the main Basic Arithmetic page"""
-        self.page.views.clear()
-        self.page.add(self.create_main_view())
-        self.page.update()
-    
-    def go_back_to_quizzes(self):
-        """Navigate back to the quiz selection page"""
-        self.show_quizzes()
-    
-    def go_back_to_quiz_question(self):
-        """Navigate back to the current quiz question"""
-        self.show_quiz_question()
-
     # AI Help methods
     def show_ai_help(self):
-        self.page.views.clear()
-        
         query_field = ft.TextField(
             label="Ask about Basic Arithmetic...",
             hint_text="e.g., How do I add multi-digit numbers? What's the best way to memorize times tables?",
@@ -296,7 +310,7 @@ class BasicArithmeticModule:
             "/basic_arithmetic/ai_help",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_main()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
                     title=ft.Text("Math AI Helper - Basic Arithmetic"),
                     bgcolor=ft.Colors.BLUE_700
                 ),
@@ -359,14 +373,39 @@ class BasicArithmeticModule:
         self.page.views.append(view)
         self.page.update()
 
-    def show_quizzes(self):
-        self.page.views.clear()
+    def show_main_page(self, page=None):
+        """Show the main arithmetic page
+        Args:
+            page: Optional page reference. If not provided, uses self.page
+        """
+        if page is None:
+            page = self.page
+
+        # Set up the main page view
+        view = ft.View(
+            "/basic_arithmetic",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
+                    title=ft.Text("Basic Arithmetic"),
+                    bgcolor=ft.Colors.BLUE_700,
+                    center_title=True
+                ),
+                self.create_main_view()
+            ]
+        )
         
+        # Clear existing views and show main view
+        page.views.clear()
+        page.views.append(view)
+        page.update()
+
+    def show_quizzes(self):
         view = ft.View(
             "/basic_arithmetic/quizzes",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_main()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.show_main_page()),
                     title=ft.Text("Basic Arithmetic Quizzes"),
                     bgcolor=ft.Colors.GREEN_700
                 ),
@@ -476,8 +515,6 @@ class BasicArithmeticModule:
         self.current_correct_index = new_correct_index
         self.current_shuffled_options = options.copy()
         
-        self.page.views.clear()
-        
         option_buttons = []
         for i, option in enumerate(options):
             option_buttons.append(
@@ -501,7 +538,7 @@ class BasicArithmeticModule:
             f"/basic_arithmetic/quiz/{self.current_quiz_level}",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_quizzes()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.show_quizzes()),
                     title=ft.Text(f"{self.current_quiz_level.title()} Quiz"),
                     bgcolor=ft.Colors.GREEN_700
                 ),
@@ -539,14 +576,31 @@ class BasicArithmeticModule:
                         ft.Text("Choose your answer:", size=16, weight=ft.FontWeight.BOLD),
                         ft.ResponsiveRow(option_buttons, spacing=10, run_spacing=10),
                         
-                        # Score display
-                        ft.Container(
-                            ft.Text(f"Current Score: {self.quiz_score}/{self.quiz_question_index}", 
-                                   size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
-                            padding=10,
-                            bgcolor=ft.Colors.GREEN_50,
-                            border_radius=5
-                        )
+                        # Score and Help section
+                        ft.Row([
+                            ft.Container(
+                                ft.Text(f"Current Score: {self.quiz_score}/{self.quiz_question_index}", 
+                                       size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                padding=10,
+                                bgcolor=ft.Colors.GREEN_50,
+                                border_radius=5,
+                                expand=True
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    content=ft.Row([
+                                        ft.Icon(ft.Icons.LIGHTBULB_OUTLINE, color=ft.Colors.AMBER_700),
+                                        ft.Text("Get Hint", size=14)
+                                    ], spacing=5),
+                                    on_click=lambda e: self.show_quiz_ai_help(question_data["question"]),
+                                    style=ft.ButtonStyle(
+                                        bgcolor=ft.Colors.AMBER_50,
+                                        color=ft.Colors.AMBER_900
+                                    )
+                                ),
+                                padding=5
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                     ], spacing=20),
                     padding=20,
                     expand=True
@@ -569,8 +623,6 @@ class BasicArithmeticModule:
         self.show_answer_feedback(question_data, selected_index, is_correct)
 
     def show_answer_feedback(self, question_data, selected_index, is_correct):
-        self.page.views.clear()
-        
         feedback_color = ft.Colors.GREEN_700 if is_correct else ft.Colors.RED_700
         feedback_icon = ft.Icons.CHECK_CIRCLE if is_correct else ft.Icons.CANCEL
         feedback_text = "Correct!" if is_correct else "Incorrect"
@@ -583,7 +635,7 @@ class BasicArithmeticModule:
             f"/basic_arithmetic/quiz/{self.current_quiz_level}/feedback",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_quiz_question()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
                     title=ft.Text("Answer Feedback"),
                     bgcolor=feedback_color
                 ),
@@ -637,8 +689,6 @@ class BasicArithmeticModule:
         self.show_quiz_question()
 
     def show_quiz_results(self):
-        self.page.views.clear()
-        
         percentage = (self.quiz_score / len(self.current_quiz_questions)) * 100
         
         if percentage >= 90:
@@ -666,7 +716,7 @@ class BasicArithmeticModule:
             f"/basic_arithmetic/quiz/{self.current_quiz_level}/results",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_quizzes()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
                     title=ft.Text("Quiz Results"),
                     bgcolor=grade_color
                 ),
@@ -705,7 +755,7 @@ class BasicArithmeticModule:
                             ft.Container(
                                 ft.ElevatedButton(
                                     "Back to Main",
-                                    on_click=lambda e: self.go_back_to_main(),
+                                    on_click=lambda e: (self.page.views.pop(), self.page.update()),
                                     style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_700, color=ft.Colors.WHITE, padding=15)
                                 ),
                                 col={'xs': 12, 'sm': 6, 'md': 4}
@@ -722,12 +772,134 @@ class BasicArithmeticModule:
         self.page.views.append(view)
         self.page.update()
 
+    def show_quiz_ai_help(self, question):
+        """Show AI help dialog for quiz questions with structured hints and tips"""
+        # Extract operation type from question to provide targeted help
+        operation_type = ""
+        if "+" in question:
+            operation_type = "addition"
+        elif "-" in question:
+            operation_type = "subtraction"
+        elif "×" in question or "boxes" in question.lower() or "groups" in question.lower():
+            operation_type = "multiplication"
+        elif "÷" in question or "divided" in question.lower():
+            operation_type = "division"
+        elif "%" in question:
+            operation_type = "percentage"
+        elif "average" in question.lower() or "mean" in question.lower():
+            operation_type = "average"
+        else:
+            operation_type = "problem-solving"
+
+        dialog = ft.AlertDialog(
+            title=ft.Text("🤖 Math Helper", size=20, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                ft.Column([
+                    # Question Section
+                    ft.Container(
+                        ft.Column([
+                            ft.Text("📝 Question:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
+                            ft.Text(question, size=14),
+                        ], spacing=5),
+                        bgcolor=ft.Colors.BLUE_50,
+                        padding=10,
+                        border_radius=5
+                    ),
+                    
+                    ft.Divider(),
+                    
+                    # Strategy Section
+                    ft.Container(
+                        ft.Column([
+                            ft.Text("💡 Problem-Solving Strategy:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                            ft.Text(
+                                get_arithmetic_ai_help(
+                                    f"Give a clear, step-by-step strategy for solving this {operation_type} problem without revealing the answer: {question}"
+                                ),
+                                size=14
+                            ),
+                        ], spacing=5),
+                        bgcolor=ft.Colors.GREEN_50,
+                        padding=10,
+                        border_radius=5
+                    ),
+                    
+                    # General Tips Section
+                    ft.Container(
+                        ft.Column([
+                            ft.Text("🎯 Quick Tips:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_700),
+                            ft.Text(
+                                get_arithmetic_ai_help(
+                                    f"Give 2-3 quick tips for solving {operation_type} problems like this one, keep it brief"
+                                ),
+                                size=14
+                            ),
+                        ], spacing=5),
+                        bgcolor=ft.Colors.PURPLE_50,
+                        padding=10,
+                        border_radius=5
+                    ),
+                    
+                ], spacing=10, scroll=ft.ScrollMode.AUTO),
+                height=400,
+                width=500,
+            ),
+            actions=[
+                ft.TextButton(
+                    "Close",
+                    on_click=lambda e: self.close_dialog(),
+                    style=ft.ButtonStyle(color=ft.Colors.BLUE_700)
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+        """Show AI help dialog for quiz questions"""
+        dialog = ft.AlertDialog(
+            title=ft.Text("🤖 AI Math Helper"),
+            content=ft.Column([
+                ft.Text("Question:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Text(question, size=14),
+                ft.Divider(),
+                ft.Text("Hint:", size=14, weight=ft.FontWeight.BOLD),
+                ft.Text(
+                    get_arithmetic_ai_help(f"Give a helpful hint for solving this math problem without giving away the answer: {question}"),
+                    size=14,
+                    selectable=True
+                ),
+                ft.Divider(),
+                ft.Text("Need More Help?", size=14, weight=ft.FontWeight.BOLD),
+                ft.Text(
+                    "Try breaking down the problem into smaller steps. Remember to use the concepts we've learned!",
+                    size=14,
+                    color=ft.Colors.BLUE_700
+                )
+            ], tight=True, spacing=10),
+            actions=[
+                ft.TextButton("Close", on_click=lambda e: self.close_dialog())
+            ],
+            actions_alignment=ft.MainAxisAlignment.END
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+    
+    def close_dialog(self):
+        """Close the current dialog"""
+        if self.page.dialog:
+            self.page.dialog.open = False
+            self.page.update()
+
     def show_learning_content(self):
         view = ft.View(
             "/basic_arithmetic/learn",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_main()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
                     title=ft.Text("Learn Basic Arithmetic"),
                     bgcolor=ft.Colors.PURPLE_700
                 ),
@@ -942,7 +1114,7 @@ class BasicArithmeticModule:
             "/basic_arithmetic/practice_test",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.go_back_to_main()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
                     title=ft.Text("Practice Test"),
                     bgcolor=ft.Colors.ORANGE_700
                 ),
