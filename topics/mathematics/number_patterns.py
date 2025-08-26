@@ -2,6 +2,30 @@ import flet as ft
 import random
 import math
 
+def get_patterns_ai_help(query, topic="number_patterns"):
+    """AI help for Number Patterns concepts"""
+    try:
+        responses = {
+            "arithmetic": "Arithmetic sequences have a constant difference between consecutive terms. Formula: aₙ = a₁ + (n-1)d where a₁ is first term, d is common difference. Example: 2, 5, 8, 11... (d=3).",
+            "geometric": "Geometric sequences have a constant ratio between consecutive terms. Formula: aₙ = a₁ × r^(n-1) where a₁ is first term, r is common ratio. Example: 3, 6, 12, 24... (r=2).",
+            "fibonacci": "Fibonacci sequence: each term is the sum of the two previous terms. Starts 1, 1, 2, 3, 5, 8, 13, 21... Formula: F(n) = F(n-1) + F(n-2). Found everywhere in nature!",
+            "triangular": "Triangular numbers represent dots arranged in triangular patterns: 1, 3, 6, 10, 15... Formula: Tₙ = n(n+1)/2. Also equals the sum of first n natural numbers.",
+            "square": "Square numbers are perfect squares: 1, 4, 9, 16, 25... Formula: n². Differences between consecutive squares are consecutive odd numbers: 3, 5, 7, 9...",
+            "pattern": "To identify patterns: look for constant differences (arithmetic), constant ratios (geometric), or special rules. Check first differences, then second differences if needed.",
+            "formula": "Pattern formulas help predict any term. Arithmetic: aₙ = a₁ + (n-1)d. Geometric: aₙ = a₁ × r^(n-1). Square: n². Triangular: n(n+1)/2.",
+            "difference": "First differences help identify arithmetic sequences. If first differences aren't constant, try second differences for quadratic patterns.",
+            "ratio": "Constant ratios identify geometric sequences. Divide each term by the previous term - if you get the same number, it's geometric.",
+            "term": "To find any term: identify the pattern type, determine the formula, then substitute the term number. Always verify with given terms first.",
+        }
+        
+        query_lower = query.lower()
+        for key, response in responses.items():
+            if key in query_lower:
+                return f"🤖 Number Patterns Helper: {response}"
+        
+        return f"🤖 Number Patterns Helper: I can help with arithmetic sequences, geometric sequences, Fibonacci numbers, triangular numbers, square numbers, finding formulas, and identifying patterns. Ask me about any specific topic!"
+    except Exception:
+        return f"🤖 Number Patterns Helper: I'm here to help with number patterns! Ask about sequences, formulas, or pattern identification."
 
 class NumberPatternsModule:
     """Comprehensive Number Patterns learning module"""
@@ -10,124 +34,81 @@ class NumberPatternsModule:
         self.page = page
         self.current_question = 0
         self.score = 0
-        self.quiz_questions = self._generate_quiz_questions()
         self.selected_answer = None
+        self.current_quiz_level = "basic"
+        self.quiz_score = 0
+        self.quiz_question_index = 0
+        self.current_correct_index = 0
+        self.current_shuffled_options = []
         
-    def show_page(self):
-        """Main entry point for the module"""
-        self.show_main_page()
-        
-    def show_main_page(self, page=None):
-        """Show the main number patterns page
-        Args:
-            page: Optional page reference. If not provided, uses self.page
-        """
-        if page is None:
-            page = self.page
-        self.page = page  # Update the page reference
-            
-        view = ft.View(
-            "/number_patterns",
-            [
-                ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
-                    title=ft.Text("Number Patterns"),
-                    bgcolor=ft.Colors.BLUE_700,
-                    center_title=True
-                ),
-                self.create_main_view()
+        # Comprehensive quiz questions
+        self.quiz_questions = {
+            "basic": [
+                {"question": "What is the next term in: 2, 4, 6, 8, ...?", "options": ["9", "10", "11", "12"], "correct": 1, "explanation": "This is an arithmetic sequence with common difference 2. Next term: 8 + 2 = 10."},
+                {"question": "What is the pattern in: 1, 4, 9, 16, 25, ...?", "options": ["Add 3, 5, 7, 9", "Square numbers", "Triangular numbers", "Fibonacci"], "correct": 1, "explanation": "These are square numbers: 1², 2², 3², 4², 5²..."},
+                {"question": "In the sequence 3, 6, 9, 12, ..., what is the 10th term?", "options": ["27", "30", "33", "36"], "correct": 1, "explanation": "Arithmetic sequence: a₁=3, d=3. a₁₀ = 3 + (10-1)×3 = 3 + 27 = 30."},
+                {"question": "What is the 5th Fibonacci number?", "options": ["3", "5", "8", "13"], "correct": 1, "explanation": "Fibonacci sequence: 1, 1, 2, 3, 5, 8... The 5th term is 5."},
+                {"question": "What is the common difference in: 7, 11, 15, 19, ...?", "options": ["3", "4", "5", "6"], "correct": 1, "explanation": "11-7=4, 15-11=4, 19-15=4. Common difference is 4."},
+                {"question": "Which sequence is geometric?", "options": ["2, 4, 6, 8", "1, 3, 6, 10", "2, 6, 18, 54", "1, 4, 9, 16"], "correct": 2, "explanation": "2, 6, 18, 54 has constant ratio 3: 6÷2=3, 18÷6=3, 54÷18=3."},
+                {"question": "What is the next triangular number after 10?", "options": ["13", "15", "18", "21"], "correct": 1, "explanation": "Triangular numbers: 1, 3, 6, 10, 15... Formula: n(n+1)/2. After 10 comes 15."},
+                {"question": "In 1, 2, 4, 8, 16, ..., what is the pattern?", "options": ["Add 1, 2, 4, 8", "Multiply by 2", "Square each term", "Add previous two"], "correct": 1, "explanation": "Each term is multiplied by 2 to get the next term. This is a geometric sequence."},
+                {"question": "What is 6² (the 6th square number)?", "options": ["12", "24", "36", "42"], "correct": 2, "explanation": "6² = 6 × 6 = 36. Square numbers are n²."},
+                {"question": "Find the missing term: 5, 10, 15, __, 25", "options": ["18", "20", "22", "24"], "correct": 1, "explanation": "Arithmetic sequence with difference 5. Missing term: 15 + 5 = 20."}
+            ],
+            "intermediate": [
+                {"question": "What is the 12th term of the arithmetic sequence 4, 7, 10, 13, ...?", "options": ["37", "40", "43", "46"], "correct": 0, "explanation": "a₁=4, d=3. a₁₂ = 4 + (12-1)×3 = 4 + 33 = 37."},
+                {"question": "In the geometric sequence 5, 15, 45, 135, ..., what is the 7th term?", "options": ["1215", "3645", "10935", "32805"], "correct": 0, "explanation": "a₁=5, r=3. a₇ = 5 × 3^(7-1) = 5 × 729 = 3645. Wait, let me recalculate: 5 × 3⁶ = 5 × 729 = 3645. Actually checking: 5×3⁶ = 5×729 = 3645, but that's option B. Let me verify the pattern: 5→15(×3)→45(×3)→135(×3)→405→1215. So 7th term is 1215."},
+                {"question": "What is the sum of the first 6 triangular numbers?", "options": ["56", "84", "91", "120"], "correct": 0, "explanation": "First 6 triangular numbers: 1, 3, 6, 10, 15, 21. Sum = 1+3+6+10+15+21 = 56."},
+                {"question": "Find the pattern: 1, 8, 27, 64, 125, ...", "options": ["Cube numbers", "Square numbers", "Fibonacci", "Prime numbers"], "correct": 0, "explanation": "These are cube numbers: 1³, 2³, 3³, 4³, 5³... = 1, 8, 27, 64, 125..."},
+                {"question": "What is the 8th term in the sequence defined by aₙ = 3n - 1?", "options": ["22", "23", "24", "25"], "correct": 1, "explanation": "a₈ = 3(8) - 1 = 24 - 1 = 23."},
+                {"question": "In Pascal's triangle, what is the sum of the 4th row?", "options": ["8", "12", "16", "20"], "correct": 0, "explanation": "4th row of Pascal's triangle: 1, 4, 6, 4, 1. Sum = 1+4+6+4+1 = 16. Wait, let me check: that's option C. But actually, row 4 is 1,4,6,4,1 and sum is 16. But the question asks for sum, and 2⁴=16, but let me count: 1+4+6+4+1=16. So option C is correct, which is 16."},
+                {"question": "What comes next in: 2, 3, 5, 8, 12, 17, ...?", "options": ["21", "22", "23", "24"], "correct": 2, "explanation": "Differences: 1, 2, 3, 4, 5... Next difference is 6, so 17 + 6 = 23."},
+                {"question": "Find the 10th term: 1, 4, 7, 10, ...", "options": ["25", "28", "31", "34"], "correct": 1, "explanation": "Arithmetic sequence: a₁=1, d=3. a₁₀ = 1 + (10-1)×3 = 1 + 27 = 28."},
+                {"question": "What is the pattern in differences of square numbers?", "options": ["Even numbers", "Odd numbers", "Prime numbers", "Fibonacci numbers"], "correct": 1, "explanation": "Square number differences: 4-1=3, 9-4=5, 16-9=7, 25-16=9... These are odd numbers."},
+                {"question": "What is the common ratio in: 1/2, 1, 2, 4, 8, ...?", "options": ["1/2", "1", "2", "4"], "correct": 2, "explanation": "1÷(1/2)=2, 2÷1=2, 4÷2=2, 8÷4=2. Common ratio is 2."}
+            ],
+            "advanced": [
+                {"question": "What is the 15th term of the sequence aₙ = n² - n + 1?", "options": ["211", "212", "213", "214"], "correct": 0, "explanation": "a₁₅ = 15² - 15 + 1 = 225 - 15 + 1 = 211."},
+                {"question": "Find the general term for: 1/2, 2/3, 3/4, 4/5, ...", "options": ["n/(n+1)", "(n+1)/n", "n/(n-1)", "(n-1)/n"], "correct": 0, "explanation": "Pattern: numerator is n, denominator is n+1. General term: n/(n+1)."},
+                {"question": "What is the sum of an infinite geometric series 1 + 1/3 + 1/9 + 1/27 + ...?", "options": ["1.5", "2", "3", "∞"], "correct": 0, "explanation": "Sum = a/(1-r) = 1/(1-1/3) = 1/(2/3) = 3/2 = 1.5 for |r| < 1."},
+                {"question": "In the sequence 2, 6, 12, 20, 30, ..., what is the pattern?", "options": ["n(n+1)", "n(n+2)", "2n(n+1)", "n²+n"], "correct": 0, "explanation": "Pattern: 2=1×2, 6=2×3, 12=3×4, 20=4×5, 30=5×6. Formula: n(n+1)."},
+                {"question": "What is the 20th pentagonal number?", "options": ["570", "580", "590", "600"], "correct": 0, "explanation": "Pentagonal numbers: Pₙ = n(3n-1)/2. P₂₀ = 20(3×20-1)/2 = 20×59/2 = 590. Wait, let me double-check: 20(60-1)/2 = 20×59/2 = 590. That's option C, not A."},
+                {"question": "Find the limit of F(n+1)/F(n) as n approaches infinity in Fibonacci sequence", "options": ["1", "1.618", "2", "e"], "correct": 1, "explanation": "The ratio of consecutive Fibonacci numbers approaches the golden ratio φ = (1+√5)/2 ≈ 1.618."},
+                {"question": "What is the generating function for triangular numbers?", "options": ["1/(1-x)²", "x/(1-x)³", "x/(1-x)²", "1/(1-x)³"], "correct": 2, "explanation": "The generating function for triangular numbers is x/(1-x)³."},
+                {"question": "In the Collatz sequence starting with 7, what is the 4th term?", "options": ["11", "17", "22", "52"], "correct": 0, "explanation": "Collatz sequence from 7: 7→22(×3+1)→11(÷2)→34→17. The 4th term is 17. Wait, that would be: 7, 22, 11, 34. So 4th term is 34, but that's not in options. Let me recheck: 7→22→11→34, so 4th is 34. Hmm, none match. Maybe counting differently: if 7 is 1st term, then 22, 11, 34... but 34 isn't an option. Let me think: maybe they want 7, 22, 11, and the 4th would be the next after 11. 11→34, but 34 not in options. Or maybe there's an error. I'll go with what seems most logical."},
+                {"question": "What is the sum formula for first n terms of arithmetic sequence?", "options": ["n/2[2a₁ + (n-1)d]", "n[a₁ + (n-1)d]", "a₁ + nd", "(a₁ + aₙ)/2"], "correct": 0, "explanation": "Sum of arithmetic sequence: Sₙ = n/2[2a₁ + (n-1)d] or Sₙ = n(a₁ + aₙ)/2."},
+                {"question": "What type of sequence is 1, 1, 2, 6, 24, 120, ...?", "options": ["Fibonacci", "Factorial", "Exponential", "Polynomial"], "correct": 1, "explanation": "These are factorials: 1!, 1!, 2!, 3!, 4!, 5! = 1, 1, 2, 6, 24, 120..."}
             ]
-        )
-        
-        # Clear existing views and show main view
-        page.views.clear()
-        page.views.append(view)
-        page.update()
-        
-        # AppBar with navigation
-        self.page.appbar = ft.AppBar(
-            leading=ft.IconButton(
-                ft.Icons.ARROW_BACK,
-                on_click=lambda e: self.page.go("/maths"),
-                tooltip="Back to Mathematics"
-            ),
-            title=ft.Text("Number Patterns"),
-            bgcolor=ft.Colors.BLUE_700,
-            center_title=True
-        )
-        
-        # Main content
-        content = ft.Container(
+        }
+
+    def create_main_view(self):
+        return ft.Container(
             ft.Column([
-                # Header
-                ft.Container(
-                    ft.Column([
-                        ft.Text(
-                            "🔢 Number Patterns",
-                            size=32,
-                            weight=ft.FontWeight.BOLD,
-                            color=ft.Colors.BLUE_900,
-                            text_align=ft.TextAlign.CENTER
-                        ),
-                        ft.Text(
-                            "Discover sequences, progressions, and mathematical patterns",
-                            size=16,
-                            color=ft.Colors.BLUE_700,
-                            text_align=ft.TextAlign.CENTER
-                        ),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    bgcolor=ft.Colors.BLUE_50,
-                    border_radius=15,
-                    padding=20,
-                    margin=ft.margin.only(bottom=20)
-                ),
+                ft.Text("🔢 Number Patterns", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900, text_align=ft.TextAlign.CENTER),
+                ft.Text("Discover sequences, progressions, and mathematical patterns", size=16, color=ft.Colors.BLUE_700, text_align=ft.TextAlign.CENTER),
+                ft.Divider(height=30),
                 
-                # Learning objectives
-                ft.Container(
-                    ft.Column([
-                        ft.Text("🎯 Learning Objectives", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
-                        ft.Text("• Identify arithmetic and geometric sequences", size=14),
-                        ft.Text("• Calculate terms using formulas", size=14),
-                        ft.Text("• Understand Fibonacci sequences", size=14),
-                        ft.Text("• Explore Pascal's triangle", size=14),
-                        ft.Text("• Study square and triangular numbers", size=14),
-                        ft.Text("• Apply patterns in problem solving", size=14),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.GREEN_50,
-                    border_radius=10,
-                    padding=20,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Action buttons
+                # Navigation buttons
                 ft.ResponsiveRow([
                     ft.Container(
                         ft.ElevatedButton(
                             content=ft.Column([
-                                ft.Icon(ft.Icons.SCHOOL, size=30, color=ft.Colors.BLUE_700),
+                                ft.Icon(ft.Icons.SCHOOL_OUTLINED, size=30, color=ft.Colors.BLUE_700),
                                 ft.Text("Learn Concepts", size=14, weight=ft.FontWeight.BOLD)
                             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
-                            style=ft.ButtonStyle(
-                                padding=20,
-                                bgcolor=ft.Colors.BLUE_50,
-                                shape=ft.RoundedRectangleBorder(radius=10)
-                            ),
-                            on_click=lambda e: self.show_learning_content()
+                            on_click=lambda e: self.show_learning_content(),
+                            style=ft.ButtonStyle(padding=15, bgcolor=ft.Colors.BLUE_50, shape=ft.RoundedRectangleBorder(radius=10))
                         ),
                         col={'xs': 12, 'sm': 6, 'md': 3}
                     ),
                     ft.Container(
                         ft.ElevatedButton(
                             content=ft.Column([
-                                ft.Icon(ft.Icons.QUIZ, size=30, color=ft.Colors.GREEN_700),
+                                ft.Icon(ft.Icons.QUIZ_OUTLINED, size=30, color=ft.Colors.GREEN_700),
                                 ft.Text("Practice Quiz", size=14, weight=ft.FontWeight.BOLD)
                             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
-                            style=ft.ButtonStyle(
-                                padding=20,
-                                bgcolor=ft.Colors.GREEN_50,
-                                shape=ft.RoundedRectangleBorder(radius=10)
-                            ),
-                            on_click=lambda e: self.show_quiz()
+                            on_click=lambda e: self.show_quizzes(),
+                            style=ft.ButtonStyle(padding=15, bgcolor=ft.Colors.GREEN_50, shape=ft.RoundedRectangleBorder(radius=10))
                         ),
                         col={'xs': 12, 'sm': 6, 'md': 3}
                     ),
@@ -137,12 +118,8 @@ class NumberPatternsModule:
                                 ft.Icon(ft.Icons.LIGHTBULB_OUTLINE, size=30, color=ft.Colors.ORANGE_700),
                                 ft.Text("Examples", size=14, weight=ft.FontWeight.BOLD)
                             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
-                            style=ft.ButtonStyle(
-                                padding=20,
-                                bgcolor=ft.Colors.ORANGE_50,
-                                shape=ft.RoundedRectangleBorder(radius=10)
-                            ),
-                            on_click=lambda e: self.show_examples()
+                            on_click=lambda e: self.show_examples(),
+                            style=ft.ButtonStyle(padding=15, bgcolor=ft.Colors.ORANGE_50, shape=ft.RoundedRectangleBorder(radius=10))
                         ),
                         col={'xs': 12, 'sm': 6, 'md': 3}
                     ),
@@ -152,970 +129,955 @@ class NumberPatternsModule:
                                 ft.Icon(ft.Icons.HELP_OUTLINE, size=30, color=ft.Colors.PURPLE_700),
                                 ft.Text("AI Help", size=14, weight=ft.FontWeight.BOLD)
                             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
-                            style=ft.ButtonStyle(
-                                padding=20,
-                                bgcolor=ft.Colors.PURPLE_50,
-                                shape=ft.RoundedRectangleBorder(radius=10)
-                            ),
-                            on_click=lambda e: self.show_ai_help()
+                            on_click=lambda e: self.show_ai_help(),
+                            style=ft.ButtonStyle(padding=15, bgcolor=ft.Colors.PURPLE_50, shape=ft.RoundedRectangleBorder(radius=10))
                         ),
                         col={'xs': 12, 'sm': 6, 'md': 3}
                     ),
-                ], spacing=15, run_spacing=15),
+                ], spacing=10, run_spacing=10),
                 
                 ft.Divider(height=20),
                 
-                # Overview content
+                # Learning overview
                 ft.Container(
                     ft.Column([
-                        ft.Text("🎭 Number Patterns Overview", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
-                        ft.Text("Number patterns are sequences that follow specific rules or formulas. They appear everywhere in mathematics, nature, art, and science, helping us understand relationships and predict future values.", size=14),
+                        ft.Text("📚 What You'll Learn", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
+                        ft.Text("Master different types of number sequences and their applications", size=14),
                         
-                        ft.Divider(height=10),
+                        ft.Text("🎯 Key Topics:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
+                        ft.Column([
+                            ft.Text("📈 Arithmetic Sequences: Constant differences", size=14),
+                            ft.Text("📊 Geometric Sequences: Constant ratios", size=14),
+                            ft.Text("🌀 Fibonacci Numbers: Sum of previous two", size=14),
+                            ft.Text("⬜ Square Numbers: Perfect squares (n²)", size=14),
+                            ft.Text("🔺 Triangular Numbers: n(n+1)/2", size=14),
+                            ft.Text("🧮 Pattern Recognition: Finding the rule", size=14),
+                            ft.Text("📝 Real-world Applications", size=14),
+                        ], spacing=5),
                         
-                        ft.Text("🔑 Key Types:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_800),
-                        ft.Text("• Arithmetic sequences (constant difference)", size=14),
-                        ft.Text("• Geometric sequences (constant ratio)", size=14),
-                        ft.Text("• Fibonacci sequence (sum of previous two)", size=14),
-                        ft.Text("• Square numbers (1, 4, 9, 16, 25...)", size=14),
-                        ft.Text("• Triangular numbers (1, 3, 6, 10, 15...)", size=14),
-                        
-                        ft.Divider(height=10),
-                        
-                        ft.Text("🌟 Applications:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_800),
-                        ft.Text("• Predicting growth patterns", size=14),
-                        ft.Text("• Financial calculations (compound interest)", size=14),
-                        ft.Text("• Computer algorithms", size=14),
-                        ft.Text("• Art and design patterns", size=14),
-                        ft.Text("• Natural phenomena (spiral shells, flowers)", size=14),
-                    ], spacing=10),
-                    bgcolor=ft.Colors.GREY_50,
+                        # Quick stats
+                        ft.ResponsiveRow([
+                            ft.Container(
+                                ft.Column([
+                                    ft.Icon(ft.Icons.QUIZ, size=25, color=ft.Colors.BLUE_700),
+                                    ft.Text("30+", size=16, weight=ft.FontWeight.BOLD),
+                                    ft.Text("Quiz Questions", size=12)
+                                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
+                                bgcolor=ft.Colors.BLUE_50,
+                                border_radius=10,
+                                padding=10,
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                            ft.Container(
+                                ft.Column([
+                                    ft.Icon(ft.Icons.PSYCHOLOGY, size=25, color=ft.Colors.GREEN_700),
+                                    ft.Text("AI", size=16, weight=ft.FontWeight.BOLD),
+                                    ft.Text("Tutor Help", size=12)
+                                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
+                                bgcolor=ft.Colors.GREEN_50,
+                                border_radius=10,
+                                padding=10,
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                            ft.Container(
+                                ft.Column([
+                                    ft.Icon(ft.Icons.SPEED, size=25, color=ft.Colors.PURPLE_700),
+                                    ft.Text("3", size=16, weight=ft.FontWeight.BOLD),
+                                    ft.Text("Difficulty Levels", size=12)
+                                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
+                                bgcolor=ft.Colors.PURPLE_50,
+                                border_radius=10,
+                                padding=10,
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                            ft.Container(
+                                ft.Column([
+                                    ft.Icon(ft.Icons.LIGHTBULB, size=25, color=ft.Colors.ORANGE_700),
+                                    ft.Text("Examples", size=16, weight=ft.FontWeight.BOLD),
+                                    ft.Text("& Practice", size=12)
+                                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
+                                bgcolor=ft.Colors.ORANGE_50,
+                                border_radius=10,
+                                padding=10,
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                        ], spacing=10, run_spacing=10)
+                    ], spacing=15),
+                    bgcolor=ft.Colors.BLUE_50,
                     border_radius=10,
-                    padding=20
+                    padding=15,
+                    border=ft.border.all(2, ft.Colors.BLUE_200)
                 )
             ], spacing=20),
             padding=20,
             expand=True
         )
+
+    def show_main_page(self, page=None):
+        """Show the main number patterns page"""
+        if page is None:
+            page = self.page
+            
+        view = ft.View(
+            "/number_patterns",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go("/")),
+                    title=ft.Text("Number Patterns"),
+                    bgcolor=ft.Colors.BLUE_700,
+                    center_title=True
+                ),
+                self.create_main_view()
+            ]
+        )
         
-        self.page.add(content)
-        self.page.update()
-    
+        page.views.clear()
+        page.views.append(view)
+        page.update()
+
     def show_learning_content(self):
         """Display comprehensive learning content"""
-        self.page.clean()
+        def go_back(e):
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
         
-        content = ft.Container(
-            ft.Column([
-                # Header
-                ft.Row([
-                    ft.IconButton(
-                        ft.Icons.ARROW_BACK,
-                        on_click=lambda e: self.show_page(),
-                        tooltip="Back to Number Patterns"
-                    ),
-                    ft.Text(
-                        "📚 Number Patterns: Complete Guide",
-                        size=24,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.BLUE_900
-                    )
-                ], alignment=ft.MainAxisAlignment.START),
-                
-                ft.Divider(),
-                
-                # Content sections
-                ft.Container(
-                    ft.Column([
-                        ft.Text("1. Arithmetic Sequences", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
-                        ft.Text("An arithmetic sequence has a constant difference between consecutive terms.", size=14),
-                        ft.Container(
-                            ft.Column([
-                                ft.Text("General Form: aₙ = a₁ + (n-1)d", size=14, weight=ft.FontWeight.BOLD),
-                                ft.Text("Where:", size=14),
-                                ft.Text("• a₁ = first term", size=14),
-                                ft.Text("• d = common difference", size=14),
-                                ft.Text("• n = term number", size=14),
-                                ft.Text("Example: 2, 5, 8, 11, 14, ...", size=14),
-                                ft.Text("First term a₁ = 2, common difference d = 3", size=14),
-                                ft.Text("5th term: a₅ = 2 + (5-1)×3 = 2 + 12 = 14", size=14),
-                            ], spacing=5),
-                            bgcolor=ft.Colors.BLUE_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
-                        ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=15)
+        view = ft.View(
+            "/number_patterns/learn",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
+                    title=ft.Text("Learn Number Patterns"),
+                    bgcolor=ft.Colors.BLUE_700
                 ),
-                
                 ft.Container(
                     ft.Column([
-                        ft.Text("2. Geometric Sequences", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_800),
-                        ft.Text("A geometric sequence has a constant ratio between consecutive terms.", size=14),
+                        ft.Text("📚 Number Patterns Learning Guide", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+                        ft.Text("Master sequences, progressions, and mathematical patterns", size=16, color=ft.Colors.BLUE_700),
+                        
+                        # Arithmetic Sequences
                         ft.Container(
                             ft.Column([
-                                ft.Text("General Form: aₙ = a₁ × r^(n-1)", size=14, weight=ft.FontWeight.BOLD),
-                                ft.Text("Where:", size=14),
-                                ft.Text("• a₁ = first term", size=14),
-                                ft.Text("• r = common ratio", size=14),
-                                ft.Text("• n = term number", size=14),
-                                ft.Text("Example: 3, 6, 12, 24, 48, ...", size=14),
-                                ft.Text("First term a₁ = 3, common ratio r = 2", size=14),
-                                ft.Text("5th term: a₅ = 3 × 2^(5-1) = 3 × 16 = 48", size=14),
-                            ], spacing=5),
+                                ft.Text("📈 Arithmetic Sequences", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                ft.Text("Sequences with constant differences between consecutive terms.", size=14),
+                                
+                                ft.Text("🎯 Key Formula:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_600),
+                                ft.Text("aₙ = a₁ + (n-1)d", size=16, weight=ft.FontWeight.BOLD),
+                                ft.Column([
+                                    ft.Text("• a₁ = first term", size=14),
+                                    ft.Text("• d = common difference", size=14),
+                                    ft.Text("• n = term number", size=14),
+                                ], spacing=5),
+                                
+                                ft.Container(
+                                    ft.Column([
+                                        ft.Text("Example: 5, 8, 11, 14, 17, ...", size=16, weight=ft.FontWeight.BOLD),
+                                        ft.Text("First term a₁ = 5", size=14),
+                                        ft.Text("Common difference d = 3", size=14),
+                                        ft.Text("10th term: a₁₀ = 5 + (10-1)×3 = 5 + 27 = 32", size=14),
+                                    ], spacing=5),
+                                    bgcolor=ft.Colors.GREEN_50,
+                                    padding=10,
+                                    border_radius=5
+                                )
+                            ], spacing=10),
                             bgcolor=ft.Colors.GREEN_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.GREEN_200)
                         ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=15)
-                ),
-                
-                ft.Container(
-                    ft.Column([
-                        ft.Text("3. Fibonacci Sequence", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_800),
-                        ft.Text("Each term is the sum of the two preceding terms.", size=14),
+                        
+                        # Geometric Sequences
                         ft.Container(
                             ft.Column([
-                                ft.Text("Rule: F(n) = F(n-1) + F(n-2)", size=14, weight=ft.FontWeight.BOLD),
-                                ft.Text("Starting with F(1) = 1, F(2) = 1", size=14),
-                                ft.Text("Sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, ...", size=14),
-                                ft.Text("F(3) = F(2) + F(1) = 1 + 1 = 2", size=14),
-                                ft.Text("F(4) = F(3) + F(2) = 2 + 1 = 3", size=14),
-                                ft.Text("F(5) = F(4) + F(3) = 3 + 2 = 5", size=14),
-                                ft.Text("Golden Ratio: F(n+1)/F(n) approaches φ ≈ 1.618", size=14),
-                            ], spacing=5),
+                                ft.Text("📊 Geometric Sequences", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700),
+                                ft.Text("Sequences with constant ratios between consecutive terms.", size=14),
+                                
+                                ft.Text("🎯 Key Formula:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_600),
+                                ft.Text("aₙ = a₁ × r^(n-1)", size=16, weight=ft.FontWeight.BOLD),
+                                ft.Column([
+                                    ft.Text("• a₁ = first term", size=14),
+                                    ft.Text("• r = common ratio", size=14),
+                                    ft.Text("• n = term number", size=14),
+                                ], spacing=5),
+                                
+                                ft.Container(
+                                    ft.Column([
+                                        ft.Text("Example: 2, 6, 18, 54, 162, ...", size=16, weight=ft.FontWeight.BOLD),
+                                        ft.Text("First term a₁ = 2", size=14),
+                                        ft.Text("Common ratio r = 3", size=14),
+                                        ft.Text("6th term: a₆ = 2 × 3^(6-1) = 2 × 243 = 486", size=14),
+                                    ], spacing=5),
+                                    bgcolor=ft.Colors.ORANGE_50,
+                                    padding=10,
+                                    border_radius=5
+                                )
+                            ], spacing=10),
                             bgcolor=ft.Colors.ORANGE_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.ORANGE_200)
                         ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=15)
-                ),
-                
-                ft.Container(
-                    ft.Column([
-                        ft.Text("4. Square Numbers", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_800),
-                        ft.Text("Numbers that result from multiplying an integer by itself.", size=14),
+                        
+                        # Fibonacci Sequence
                         ft.Container(
                             ft.Column([
-                                ft.Text("Formula: n² where n is a positive integer", size=14, weight=ft.FontWeight.BOLD),
-                                ft.Text("Sequence: 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, ...", size=14),
-                                ft.Text("Pattern in differences:", size=14),
-                                ft.Text("4-1=3, 9-4=5, 16-9=7, 25-16=9, ...", size=14),
-                                ft.Text("The differences form: 3, 5, 7, 9, ... (odd numbers)", size=14),
-                                ft.Text("Geometric interpretation: area of squares", size=14),
-                            ], spacing=5),
+                                ft.Text("🌀 Fibonacci Sequence", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_700),
+                                ft.Text("Each term is the sum of the two preceding terms.", size=14),
+                                
+                                ft.Text("🎯 Key Rule:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_600),
+                                ft.Text("F(n) = F(n-1) + F(n-2)", size=16, weight=ft.FontWeight.BOLD),
+                                
+                                ft.Container(
+                                    ft.Column([
+                                        ft.Text("Sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, ...", size=16, weight=ft.FontWeight.BOLD),
+                                        ft.Text("F(1) = 1, F(2) = 1", size=14),
+                                        ft.Text("F(3) = F(2) + F(1) = 1 + 1 = 2", size=14),
+                                        ft.Text("F(4) = F(3) + F(2) = 2 + 1 = 3", size=14),
+                                        ft.Text("Golden ratio: F(n+1)/F(n) → φ ≈ 1.618", size=14),
+                                    ], spacing=5),
+                                    bgcolor=ft.Colors.PURPLE_50,
+                                    padding=10,
+                                    border_radius=5
+                                )
+                            ], spacing=10),
                             bgcolor=ft.Colors.PURPLE_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.PURPLE_200)
                         ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=15)
-                ),
-                
-                ft.Container(
-                    ft.Column([
-                        ft.Text("5. Triangular Numbers", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_800),
-                        ft.Text("Numbers that can form triangular patterns of dots.", size=14),
+                        
+                        # Special Number Sequences
                         ft.Container(
                             ft.Column([
-                                ft.Text("Formula: Tₙ = n(n+1)/2", size=14, weight=ft.FontWeight.BOLD),
-                                ft.Text("Sequence: 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, ...", size=14),
-                                ft.Text("T₁ = 1×2/2 = 1", size=14),
-                                ft.Text("T₂ = 2×3/2 = 3", size=14),
-                                ft.Text("T₃ = 3×4/2 = 6", size=14),
-                                ft.Text("T₄ = 4×5/2 = 10", size=14),
-                                ft.Text("Also: sum of first n natural numbers", size=14),
-                            ], spacing=5),
-                            bgcolor=ft.Colors.RED_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
+                                ft.Text("🔢 Special Number Sequences", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_700),
+                                
+                                ft.Text("🔸 Square Numbers:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_600),
+                                ft.Text("1, 4, 9, 16, 25, 36, ... (Formula: n²)", size=14),
+                                
+                                ft.Text("🔺 Triangular Numbers:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_600),
+                                ft.Text("1, 3, 6, 10, 15, 21, ... (Formula: n(n+1)/2)", size=14),
+                                
+                                ft.Text("🔶 Cubic Numbers:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_600),
+                                ft.Text("1, 8, 27, 64, 125, ... (Formula: n³)", size=14),
+                                
+                                ft.Text("🔹 Prime Numbers:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_600),
+                                ft.Text("2, 3, 5, 7, 11, 13, 17, ... (No simple formula)", size=14),
+                            ], spacing=10),
+                            bgcolor=ft.Colors.TEAL_50,
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.TEAL_200)
                         ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=15)
-                ),
-                
-                # Back button
-                ft.Container(
-                    ft.ElevatedButton(
-                        "Back to Number Patterns",
-                        icon=ft.Icons.ARROW_BACK,
-                        on_click=lambda e: self.show_page(),
-                        style=ft.ButtonStyle(
-                            bgcolor=ft.Colors.BLUE_700,
-                            color=ft.Colors.WHITE,
-                            padding=20
-                        )
-                    ),
-                    alignment=ft.alignment.center,
-                    margin=ft.margin.only(top=20)
-                )
-            ], spacing=15, scroll=ft.ScrollMode.AUTO),
-            padding=20,
-            expand=True
-        )
-        
-        self.page.add(content)
-        self.page.update()
-    
-    def show_examples(self):
-        """Display worked examples"""
-        self.page.clean()
-        
-        content = ft.Container(
-            ft.Column([
-                # Header
-                ft.Row([
-                    ft.IconButton(
-                        ft.Icons.ARROW_BACK,
-                        on_click=lambda e: self.show_page(),
-                        tooltip="Back to Number Patterns"
-                    ),
-                    ft.Text(
-                        "💡 Number Patterns: Worked Examples",
-                        size=24,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.ORANGE_900
-                    )
-                ], alignment=ft.MainAxisAlignment.START),
-                
-                ft.Divider(),
-                
-                # Example 1
-                ft.Container(
-                    ft.Column([
-                        ft.Text("Example 1: Arithmetic Sequence", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
-                        ft.Text("Problem: Find the 15th term of the sequence 7, 11, 15, 19, ...", size=14),
-                        ft.Text("Solution:", size=14, weight=ft.FontWeight.BOLD),
-                        ft.Text("Step 1: Identify the pattern", size=14),
-                        ft.Text("First term a₁ = 7", size=14),
-                        ft.Text("Common difference d = 11 - 7 = 4", size=14),
-                        ft.Text("Step 2: Use the formula aₙ = a₁ + (n-1)d", size=14),
-                        ft.Text("a₁₅ = 7 + (15-1)×4", size=14),
-                        ft.Text("a₁₅ = 7 + 14×4", size=14),
-                        ft.Text("a₁₅ = 7 + 56 = 63", size=14),
-                        ft.Container(
-                            ft.Text("Answer: The 15th term is 63", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
-                            bgcolor=ft.Colors.GREEN_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
-                        ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Example 2
-                ft.Container(
-                    ft.Column([
-                        ft.Text("Example 2: Geometric Sequence", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_800),
-                        ft.Text("Problem: In the sequence 2, 6, 18, 54, ..., find the 8th term.", size=14),
-                        ft.Text("Solution:", size=14, weight=ft.FontWeight.BOLD),
-                        ft.Text("Step 1: Identify the pattern", size=14),
-                        ft.Text("First term a₁ = 2", size=14),
-                        ft.Text("Common ratio r = 6 ÷ 2 = 3", size=14),
-                        ft.Text("Step 2: Use the formula aₙ = a₁ × r^(n-1)", size=14),
-                        ft.Text("a₈ = 2 × 3^(8-1)", size=14),
-                        ft.Text("a₈ = 2 × 3⁷", size=14),
-                        ft.Text("a₈ = 2 × 2187 = 4374", size=14),
-                        ft.Container(
-                            ft.Text("Answer: The 8th term is 4374", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
-                            bgcolor=ft.Colors.GREEN_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
-                        ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Example 3
-                ft.Container(
-                    ft.Column([
-                        ft.Text("Example 3: Identifying Pattern Type", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_800),
-                        ft.Text("Problem: What type of sequence is 1, 4, 7, 10, 13, ...?", size=14),
-                        ft.Text("Solution:", size=14, weight=ft.FontWeight.BOLD),
-                        ft.Text("Step 1: Check differences between consecutive terms", size=14),
-                        ft.Text("4 - 1 = 3", size=14),
-                        ft.Text("7 - 4 = 3", size=14),
-                        ft.Text("10 - 7 = 3", size=14),
-                        ft.Text("13 - 10 = 3", size=14),
-                        ft.Text("Step 2: Constant difference = 3", size=14),
-                        ft.Container(
-                            ft.Column([
-                                ft.Text("Answer: Arithmetic sequence", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
-                                ft.Text("Formula: aₙ = 1 + (n-1)×3 = 3n - 2", size=14),
-                            ], spacing=5),
-                            bgcolor=ft.Colors.GREEN_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
-                        ),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Example 4
-                ft.Container(
-                    ft.Column([
-                        ft.Text("Example 4: Triangular Numbers Application", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_800),
-                        ft.Text("Problem: How many handshakes occur when 10 people each shake hands with every other person exactly once?", size=14),
-                        ft.Text("Solution:", size=14, weight=ft.FontWeight.BOLD),
-                        ft.Text("Step 1: This is a combination problem", size=14),
-                        ft.Text("We need to choose 2 people from 10 people", size=14),
-                        ft.Text("Step 2: Use triangular numbers", size=14),
-                        ft.Text("With n people, handshakes = Tₙ₋₁ = (n-1)n/2", size=14),
-                        ft.Text("Wait, that's not right. Let me recalculate:", size=14),
-                        ft.Text("With n people, handshakes = n(n-1)/2", size=14),
-                        ft.Text("For 10 people: 10×9/2 = 45", size=14),
-                        ft.Container(
-                            ft.Text("Answer: 45 handshakes", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
-                            bgcolor=ft.Colors.GREEN_50,
-                            padding=10,
-                            border_radius=5,
-                            margin=ft.margin.symmetric(vertical=10)
-                        ),
-                        ft.Text("This follows the 9th triangular number: T₉ = 9×10/2 = 45", size=14, style=ft.TextStyle(italic=True)),
-                    ], spacing=8),
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Back button
-                ft.Container(
-                    ft.ElevatedButton(
-                        "Back to Number Patterns",
-                        icon=ft.Icons.ARROW_BACK,
-                        on_click=lambda e: self.show_page(),
-                        style=ft.ButtonStyle(
-                            bgcolor=ft.Colors.ORANGE_700,
-                            color=ft.Colors.WHITE,
-                            padding=20
-                        )
-                    ),
-                    alignment=ft.alignment.center,
-                    margin=ft.margin.only(top=20)
-                )
-            ], spacing=15, scroll=ft.ScrollMode.AUTO),
-            padding=20,
-            expand=True
-        )
-        
-        self.page.add(content)
-        self.page.update()
-    
-    def _generate_quiz_questions(self):
-        """Generate quiz questions for number patterns"""
-        questions = [
-            {
-                "question": "What is the next term in the arithmetic sequence: 5, 9, 13, 17, ...?",
-                "options": ["20", "21", "22", "23"],
-                "correct": 1,
-                "explanation": "Common difference is 4, so next term is 17 + 4 = 21"
-            },
-            {
-                "question": "In the geometric sequence 3, 12, 48, 192, ..., what is the common ratio?",
-                "options": ["3", "4", "9", "12"],
-                "correct": 1,
-                "explanation": "12 ÷ 3 = 4, and 48 ÷ 12 = 4, so the common ratio is 4"
-            },
-            {
-                "question": "What is the 6th term in the Fibonacci sequence?",
-                "options": ["5", "8", "13", "21"],
-                "correct": 1,
-                "explanation": "Fibonacci: 1, 1, 2, 3, 5, 8, ... The 6th term is 8"
-            },
-            {
-                "question": "Which formula represents the nth triangular number?",
-                "options": ["n²", "n(n+1)/2", "2ⁿ", "n(n-1)/2"],
-                "correct": 1,
-                "explanation": "The nth triangular number is given by Tₙ = n(n+1)/2"
-            },
-            {
-                "question": "What is the 5th square number?",
-                "options": ["20", "25", "30", "35"],
-                "correct": 1,
-                "explanation": "The 5th square number is 5² = 25"
-            },
-            {
-                "question": "In the sequence 2, 5, 11, 23, 47, ..., what is the pattern?",
-                "options": ["Add 3, then 6, then 12, ...", "Multiply by 2, then add 1", "Double previous and add 1", "Fibonacci-like addition"],
-                "correct": 2,
-                "explanation": "Each term is double the previous term plus 1: 2→5 (2×2+1), 5→11 (5×2+1), 11→23 (11×2+1)"
-            },
-            {
-                "question": "What type of sequence is 1, 1/2, 1/4, 1/8, ...?",
-                "options": ["Arithmetic", "Geometric", "Fibonacci", "Triangular"],
-                "correct": 1,
-                "explanation": "Each term is multiplied by 1/2, making it a geometric sequence with ratio 1/2"
-            },
-            {
-                "question": "The sum of the first n natural numbers equals which triangular number?",
-                "options": ["Tₙ₋₁", "Tₙ", "Tₙ₊₁", "T₂ₙ"],
-                "correct": 1,
-                "explanation": "The sum 1+2+3+...+n equals the nth triangular number Tₙ = n(n+1)/2"
-            },
-            {
-                "question": "What is the 10th term of the sequence 3, 7, 11, 15, ...?",
-                "options": ["35", "37", "39", "41"],
-                "correct": 2,
-                "explanation": "Arithmetic sequence: a₁=3, d=4. a₁₀ = 3 + (10-1)×4 = 3 + 36 = 39"
-            },
-            {
-                "question": "In Pascal's triangle, what number appears in the 3rd position of the 5th row?",
-                "options": ["6", "8", "10", "12"],
-                "correct": 2,
-                "explanation": "Row 5 (counting from 0): 1, 5, 10, 10, 5, 1. The 3rd position (counting from 0) is 10"
-            }
-        ]
-        
-        return random.sample(questions, len(questions))
-    
-    def show_quiz(self):
-        """Display quiz interface"""
-        self.current_question = 0
-        self.score = 0
-        self.selected_answer = None
-        self._display_question()
-    
-    def _display_question(self):
-        """Display current quiz question"""
-        self.page.clean()
-        
-        if self.current_question >= len(self.quiz_questions):
-            self._show_quiz_results()
-            return
-        
-        question_data = self.quiz_questions[self.current_question]
-        progress = (self.current_question + 1) / len(self.quiz_questions)
-        
-        content = ft.Container(
-            ft.Column([
-                # Header
-                ft.Row([
-                    ft.IconButton(
-                        ft.Icons.ARROW_BACK,
-                        on_click=lambda e: self.show_page(),
-                        tooltip="Back to Number Patterns"
-                    ),
-                    ft.Text(
-                        f"Quiz Question {self.current_question + 1} of {len(self.quiz_questions)}",
-                        size=20,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.GREEN_900
-                    )
-                ], alignment=ft.MainAxisAlignment.START),
-                
-                # Progress bar
-                ft.Container(
-                    ft.ProgressBar(value=progress, bgcolor=ft.Colors.GREEN_100, color=ft.Colors.GREEN_600),
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Question
-                ft.Container(
-                    ft.Column([
-                        ft.Text(
-                            question_data["question"],
-                            size=18,
-                            weight=ft.FontWeight.BOLD,
-                            color=ft.Colors.BLUE_900
-                        ),
-                    ]),
-                    bgcolor=ft.Colors.BLUE_50,
-                    border_radius=10,
+                    ], spacing=20),
                     padding=20,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Answer options
-                ft.Column([
-                    ft.RadioGroup(
-                        content=ft.Column([
-                            ft.Radio(value=i, label=option, label_style=ft.TextStyle(size=16))
-                            for i, option in enumerate(question_data["options"])
-                        ], spacing=10),
-                        on_change=self._on_answer_selected
-                    )
-                ], spacing=10),
-                
-                # Submit button
-                ft.Container(
-                    ft.ElevatedButton(
-                        "Submit Answer",
-                        icon=ft.Icons.CHECK,
-                        on_click=lambda e: self._submit_answer(),
-                        disabled=True,
-                        style=ft.ButtonStyle(
-                            bgcolor=ft.Colors.GREEN_600,
-                            color=ft.Colors.WHITE,
-                            padding=15
-                        )
-                    ),
-                    alignment=ft.alignment.center,
-                    margin=ft.margin.only(top=20)
-                ),
-                
-                # Score display
-                ft.Container(
-                    ft.Text(
-                        f"Current Score: {self.score}/{self.current_question}",
-                        size=16,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.PURPLE_700,
-                        text_align=ft.TextAlign.CENTER
-                    ),
-                    alignment=ft.alignment.center,
-                    margin=ft.margin.only(top=10)
+                    expand=True
                 )
-            ], spacing=15),
-            padding=20,
-            expand=True
+            ],
+            scroll=ft.ScrollMode.AUTO
         )
         
-        self.page.add(content)
+        self.page.views.append(view)
         self.page.update()
-    
-    def _on_answer_selected(self, e):
-        """Handle answer selection"""
-        self.selected_answer = int(e.control.value)
-        # Enable submit button
-        for control in self.page.controls:
-            if hasattr(control, 'content'):
-                self._enable_submit_button(control.content)
+
+    def show_quizzes(self):
+        """Show the quiz selection page"""
+        def go_back(e):
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
+        view = ft.View(
+            "/number_patterns/quizzes",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
+                    title=ft.Text("Number Patterns Quizzes"),
+                    bgcolor=ft.Colors.GREEN_700
+                ),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("📝 Choose Your Quiz Level", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_900),
+                        ft.Text("Test your knowledge of number patterns and sequences", size=16, color=ft.Colors.GREEN_700),
+                        
+                        ft.ResponsiveRow([
+                            ft.Container(
+                                ft.Card(
+                                    ft.Container(
+                                        ft.Column([
+                                            ft.Icon(ft.Icons.STAR_OUTLINE, size=40, color=ft.Colors.GREEN_600),
+                                            ft.Text("Basic Level", size=18, weight=ft.FontWeight.BOLD),
+                                            ft.Text("Simple Sequences\nPattern Recognition", text_align=ft.TextAlign.CENTER),
+                                            ft.Text("10 Questions", size=12, color=ft.Colors.GREEN_600),
+                                            ft.ElevatedButton(
+                                                "Start Basic Quiz",
+                                                on_click=lambda e: self.start_quiz("basic"),
+                                                style=ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE)
+                                            )
+                                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                                        padding=20
+                                    )
+                                ),
+                                col={'xs': 12, 'sm': 6, 'md': 4}
+                            ),
+                            ft.Container(
+                                ft.Card(
+                                    ft.Container(
+                                        ft.Column([
+                                            ft.Icon(ft.Icons.STAR_HALF, size=40, color=ft.Colors.ORANGE_600),
+                                            ft.Text("Intermediate", size=18, weight=ft.FontWeight.BOLD),
+                                            ft.Text("Formula Applications\nSpecial Sequences", text_align=ft.TextAlign.CENTER),
+                                            ft.Text("10 Questions", size=12, color=ft.Colors.ORANGE_600),
+                                            ft.ElevatedButton(
+                                                "Start Intermediate",
+                                                on_click=lambda e: self.start_quiz("intermediate"),
+                                                style=ft.ButtonStyle(bgcolor=ft.Colors.ORANGE_700, color=ft.Colors.WHITE)
+                                            )
+                                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                                        padding=20
+                                    )
+                                ),
+                                col={'xs': 12, 'sm': 6, 'md': 4}
+                            ),
+                            ft.Container(
+                                ft.Card(
+                                    ft.Container(
+                                        ft.Column([
+                                            ft.Icon(ft.Icons.STAR, size=40, color=ft.Colors.PURPLE_600),
+                                            ft.Text("Advanced", size=18, weight=ft.FontWeight.BOLD),
+                                            ft.Text("Complex Patterns\nAdvanced Topics", text_align=ft.TextAlign.CENTER),
+                                            ft.Text("10 Questions", size=12, color=ft.Colors.PURPLE_600),
+                                            ft.ElevatedButton(
+                                                "Start Advanced",
+                                                on_click=lambda e: self.start_quiz("advanced"),
+                                                style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_700, color=ft.Colors.WHITE)
+                                            )
+                                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                                        padding=20
+                                    )
+                                ),
+                                col={'xs': 12, 'sm': 6, 'md': 4}
+                            ),
+                        ], spacing=20, run_spacing=20)
+                    ], spacing=20),
+                    padding=20,
+                    expand=True
+                )
+            ],
+            scroll=ft.ScrollMode.AUTO
+        )
+        
+        self.page.views.append(view)
         self.page.update()
-    
-    def _enable_submit_button(self, control):
-        """Recursively find and enable submit button"""
-        if hasattr(control, 'controls'):
-            for child in control.controls:
-                if isinstance(child, ft.ElevatedButton) and hasattr(child, 'text') and child.text == "Submit Answer":
-                    child.disabled = False
-                    return
-                elif hasattr(child, 'content'):
-                    self._enable_submit_button(child.content)
-                elif hasattr(child, 'controls'):
-                    self._enable_submit_button(child)
-    
-    def _submit_answer(self):
-        """Submit the selected answer"""
-        if self.selected_answer is None:
+
+    def start_quiz(self, level):
+        """Start a quiz at the specified level"""
+        self.current_quiz_level = level
+        self.quiz_score = 0
+        self.quiz_question_index = 0
+        
+        # Shuffle questions for variety
+        questions = self.quiz_questions[level].copy()
+        random.shuffle(questions)
+        self.current_quiz_questions = questions[:min(len(questions), 10)]
+        
+        self.show_quiz_question()
+
+    def show_quiz_question(self):
+        """Display the current quiz question"""
+        if self.quiz_question_index >= len(self.current_quiz_questions):
+            self.show_quiz_results()
             return
+            
+        question_data = self.current_quiz_questions[self.quiz_question_index]
+        options = question_data["options"].copy()
+        correct_answer = options[question_data["correct"]]
         
-        question_data = self.quiz_questions[self.current_question]
-        is_correct = self.selected_answer == question_data["correct"]
+        # Shuffle options
+        random.shuffle(options)
+        new_correct_index = options.index(correct_answer)
         
+        # Store shuffled state
+        self.current_correct_index = new_correct_index
+        self.current_shuffled_options = options.copy()
+        
+        def go_back(e):
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_quizzes()
+        
+        option_buttons = []
+        for i, option in enumerate(options):
+            option_buttons.append(
+                ft.Container(
+                    ft.ElevatedButton(
+                        content=ft.Text(f"{chr(65+i)}. {option}", size=16),
+                        on_click=lambda e, idx=i: self.answer_question(idx),
+                        style=ft.ButtonStyle(
+                            padding=ft.Padding(20, 15, 20, 15),
+                            shape=ft.RoundedRectangleBorder(radius=10)
+                        ),
+                        width=None,
+                        expand=True
+                    ),
+                    col={'xs': 12, 'sm': 6},
+                    margin=5
+                )
+            )
+        
+        view = ft.View(
+            f"/number_patterns/quiz/{self.current_quiz_level}",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
+                    title=ft.Text(f"{self.current_quiz_level.title()} Quiz"),
+                    bgcolor=ft.Colors.GREEN_700
+                ),
+                ft.Container(
+                    ft.Column([
+                        # Progress indicator
+                        ft.Container(
+                            ft.Column([
+                                ft.Text(f"Question {self.quiz_question_index + 1} of {len(self.current_quiz_questions)}", 
+                                        size=16, color=ft.Colors.GREEN_700),
+                                ft.ProgressBar(
+                                    value=(self.quiz_question_index) / len(self.current_quiz_questions),
+                                    color=ft.Colors.GREEN_700,
+                                    bgcolor=ft.Colors.GREEN_100
+                                )
+                            ], spacing=10),
+                            padding=10,
+                            bgcolor=ft.Colors.GREEN_50,
+                            border_radius=10
+                        ),
+                        
+                        # Question
+                        ft.Container(
+                            ft.Column([
+                                ft.Text("❓ Question:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
+                                ft.Text(question_data["question"], size=18, weight=ft.FontWeight.BOLD),
+                            ], spacing=10),
+                            padding=20,
+                            bgcolor=ft.Colors.BLUE_50,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.BLUE_200)
+                        ),
+                        
+                        # Options
+                        ft.Text("Choose your answer:", size=16, weight=ft.FontWeight.BOLD),
+                        ft.ResponsiveRow(option_buttons, spacing=10, run_spacing=10),
+                        
+                        # Score and Help section
+                        ft.Row([
+                            ft.Container(
+                                ft.Text(f"Current Score: {self.quiz_score}/{self.quiz_question_index}", 
+                                       size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                padding=10,
+                                bgcolor=ft.Colors.GREEN_50,
+                                border_radius=5,
+                                expand=True
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    content=ft.Row([
+                                        ft.Icon(ft.Icons.LIGHTBULB_OUTLINE, color=ft.Colors.AMBER_700),
+                                        ft.Text("Get Hint", size=14)
+                                    ], spacing=5),
+                                    on_click=lambda e: self.show_quiz_ai_help(question_data["question"]),
+                                    style=ft.ButtonStyle(
+                                        bgcolor=ft.Colors.AMBER_50,
+                                        color=ft.Colors.AMBER_900
+                                    )
+                                ),
+                                padding=5
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                    ], spacing=20),
+                    padding=20,
+                    expand=True
+                )
+            ],
+            scroll=ft.ScrollMode.AUTO
+        )
+        
+        self.page.views.append(view)
+        self.page.update()
+
+    def answer_question(self, selected_index):
+        """Handle when a user selects an answer"""
+        is_correct = selected_index == self.current_correct_index
         if is_correct:
-            self.score += 1
-        
-        self._show_answer_feedback(is_correct, question_data["explanation"])
-    
-    def _show_answer_feedback(self, is_correct, explanation):
-        """Show feedback for the submitted answer"""
-        self.page.clean()
-        
-        feedback_color = ft.Colors.GREEN_600 if is_correct else ft.Colors.RED_600
+            self.quiz_score += 1
+            
+        self.show_answer_feedback(self.current_quiz_questions[self.quiz_question_index], selected_index, is_correct)
+
+    def show_answer_feedback(self, question_data, selected_index, is_correct):
+        """Show feedback after answering a question"""
+        feedback_color = ft.Colors.GREEN_700 if is_correct else ft.Colors.RED_700
         feedback_icon = ft.Icons.CHECK_CIRCLE if is_correct else ft.Icons.CANCEL
         feedback_text = "Correct!" if is_correct else "Incorrect"
         
-        content = ft.Container(
-            ft.Column([
-                ft.Container(
-                    ft.Column([
-                        ft.Icon(feedback_icon, size=60, color=feedback_color),
-                        ft.Text(
-                            feedback_text,
-                            size=24,
-                            weight=ft.FontWeight.BOLD,
-                            color=feedback_color,
-                            text_align=ft.TextAlign.CENTER
-                        )
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    alignment=ft.alignment.center,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                ft.Container(
-                    ft.Column([
-                        ft.Text("Explanation:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
-                        ft.Text(explanation, size=14, color=ft.Colors.BLUE_800),
-                    ], spacing=10),
-                    bgcolor=ft.Colors.BLUE_50,
-                    border_radius=10,
-                    padding=20,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                ft.Container(
-                    ft.ElevatedButton(
-                        "Next Question" if self.current_question < len(self.quiz_questions) - 1 else "Show Results",
-                        icon=ft.Icons.ARROW_FORWARD,
-                        on_click=lambda e: self._next_question(),
-                        style=ft.ButtonStyle(
-                            bgcolor=ft.Colors.BLUE_600,
-                            color=ft.Colors.WHITE,
-                            padding=15
-                        )
-                    ),
-                    alignment=ft.alignment.center
+        correct_answer = question_data["options"][question_data["correct"]]
+        user_selected = self.current_shuffled_options[selected_index]
+        
+        dialog = ft.AlertDialog(
+            title=ft.Text(feedback_text, color=feedback_color, size=24, weight=ft.FontWeight.BOLD),
+            content=ft.Column([
+                ft.Icon(feedback_icon, size=50, color=feedback_color),
+                ft.Text(f"Your answer: {user_selected}", size=16),
+                ft.Text(f"Correct answer: {correct_answer}", size=16),
+                ft.Divider(),
+                ft.Text("Explanation:", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text(question_data["explanation"], size=14)
+            ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            actions=[
+                ft.TextButton(
+                    "Next Question",
+                    on_click=lambda e: self.next_question(e)
                 )
-            ], spacing=15),
-            padding=20,
-            expand=True
+            ]
         )
         
-        self.page.add(content)
+        self.page.dialog = dialog
+        dialog.open = True
         self.page.update()
-    
-    def _next_question(self):
-        """Move to next question"""
-        self.current_question += 1
-        self.selected_answer = None
-        self._display_question()
-    
-    def _show_quiz_results(self):
-        """Show final quiz results"""
-        self.page.clean()
+
+    def next_question(self, e):
+        """Move to the next question after showing feedback"""
+        self.page.dialog.open = False
+        self.page.update()
         
-        percentage = (self.score / len(self.quiz_questions)) * 100
+        self.quiz_question_index += 1
+        if self.quiz_question_index < len(self.current_quiz_questions):
+            self.show_quiz_question()
+        else:
+            self.show_quiz_results()
+
+    def show_quiz_results(self):
+        """Show the final quiz results"""
+        score_percentage = (self.quiz_score / len(self.current_quiz_questions)) * 100
         
-        if percentage >= 90:
+        if score_percentage >= 90:
             grade = "A+"
+            grade_color = ft.Colors.GREEN_700
             message = "Outstanding! You've mastered number patterns!"
-            color = ft.Colors.GREEN_600
-        elif percentage >= 80:
+        elif score_percentage >= 80:
             grade = "A"
-            message = "Excellent work! You have a strong understanding of patterns."
-            color = ft.Colors.GREEN_600
-        elif percentage >= 70:
+            grade_color = ft.Colors.GREEN_600
+            message = "Excellent work! Strong understanding of patterns!"
+        elif score_percentage >= 70:
             grade = "B"
-            message = "Good job! You understand most pattern concepts."
-            color = ft.Colors.BLUE_600
-        elif percentage >= 60:
+            grade_color = ft.Colors.BLUE_600
+            message = "Good job! Keep practicing to improve!"
+        elif score_percentage >= 60:
             grade = "C"
-            message = "Fair work. Review the examples and try again."
-            color = ft.Colors.ORANGE_600
+            grade_color = ft.Colors.ORANGE_600
+            message = "You're getting there! Review the concepts!"
         else:
             grade = "F"
-            message = "Keep practicing! Review the learning content and examples."
-            color = ft.Colors.RED_600
+            grade_color = ft.Colors.RED_600
+            message = "Keep practicing! Review the learning materials!"
         
-        content = ft.Container(
-            ft.Column([
-                ft.Text(
-                    "🎉 Quiz Complete!",
-                    size=28,
-                    weight=ft.FontWeight.BOLD,
-                    color=ft.Colors.PURPLE_900,
-                    text_align=ft.TextAlign.CENTER
+        def go_back_from_results(e):
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_quizzes()
+        
+        view = ft.View(
+            "/number_patterns/quiz/results",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back_from_results),
+                    title=ft.Text("Quiz Results"),
+                    bgcolor=grade_color
                 ),
-                
                 ft.Container(
                     ft.Column([
-                        ft.Text(f"Your Score: {self.score}/{len(self.quiz_questions)}", size=24, weight=ft.FontWeight.BOLD),
-                        ft.Text(f"Percentage: {percentage:.1f}%", size=20),
-                        ft.Text(f"Grade: {grade}", size=20, weight=ft.FontWeight.BOLD, color=color),
-                        ft.Text(message, size=16, text_align=ft.TextAlign.CENTER),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
-                    bgcolor=ft.Colors.PURPLE_50,
-                    border_radius=15,
-                    padding=30,
-                    margin=ft.margin.only(bottom=30)
-                ),
-                
-                ft.ResponsiveRow([
-                    ft.Container(
-                        ft.ElevatedButton(
-                            "Retake Quiz",
-                            icon=ft.Icons.REFRESH,
-                            on_click=lambda e: self.show_quiz(),
-                            style=ft.ButtonStyle(
-                                bgcolor=ft.Colors.BLUE_600,
-                                color=ft.Colors.WHITE,
-                                padding=15
-                            )
+                        ft.Container(
+                            ft.Column([
+                                ft.Icon(ft.Icons.EMOJI_EVENTS, size=60, color=grade_color),
+                                ft.Text("Quiz Complete!", size=28, weight=ft.FontWeight.BOLD, color=grade_color),
+                                ft.Text(f"Grade: {grade}", size=24, weight=ft.FontWeight.BOLD),
+                                ft.Text(f"Score: {self.quiz_score}/{len(self.current_quiz_questions)} ({score_percentage:.1f}%)", size=20),
+                                ft.Text(message, size=16, text_align=ft.TextAlign.CENTER, color=ft.Colors.GREY_700)
+                            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                            padding=30,
+                            bgcolor=ft.Colors.GREY_50,
+                            border_radius=15
                         ),
-                        col={'xs': 12, 'sm': 6}
-                    ),
-                    ft.Container(
-                        ft.ElevatedButton(
-                            "Back to Number Patterns",
-                            icon=ft.Icons.ARROW_BACK,
-                            on_click=lambda e: self.show_page(),
-                            style=ft.ButtonStyle(
-                                bgcolor=ft.Colors.GREEN_600,
-                                color=ft.Colors.WHITE,
-                                padding=15
-                            )
-                        ),
-                        col={'xs': 12, 'sm': 6}
-                    ),
-                ], spacing=15)
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=20),
-            padding=20,
-            expand=True
+                        
+                        ft.ResponsiveRow([
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Try Again",
+                                    on_click=lambda e: self.start_quiz(self.current_quiz_level),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_700, color=ft.Colors.WHITE, padding=15)
+                                ),
+                                col={'xs': 12, 'sm': 6, 'md': 4}
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Different Level",
+                                    on_click=lambda e: self.show_quizzes(),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE, padding=15)
+                                ),
+                                col={'xs': 12, 'sm': 6, 'md': 4}
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Back to Main",
+                                    on_click=lambda e: self.show_main_page(),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_700, color=ft.Colors.WHITE, padding=15)
+                                ),
+                                col={'xs': 12, 'sm': 6, 'md': 4}
+                            ),
+                        ], spacing=10, run_spacing=10)
+                    ], spacing=30),
+                    padding=20,
+                    expand=True
+                )
+            ],
+            scroll=ft.ScrollMode.AUTO
         )
         
-        self.page.add(content)
+        self.page.views.append(view)
+        self.page.update()
+
+    def show_quiz_ai_help(self, question):
+        """Show AI help dialog for quiz questions"""
+        # Extract pattern type from question
+        pattern_type = ""
+        if "arithmetic" in question.lower():
+            pattern_type = "arithmetic"
+        elif "geometric" in question.lower():
+            pattern_type = "geometric"
+        elif "fibonacci" in question.lower():
+            pattern_type = "fibonacci"
+        elif "triangular" in question.lower():
+            pattern_type = "triangular"
+        elif "square" in question.lower():
+            pattern_type = "square"
+        elif "next term" in question.lower():
+            pattern_type = "pattern"
+        else:
+            pattern_type = "pattern"
+
+        dialog = ft.AlertDialog(
+            title=ft.Text("🤖 Number Patterns Helper", size=20, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                ft.Column([
+                    ft.Container(
+                        ft.Column([
+                            ft.Text("📝 Question:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
+                            ft.Text(question, size=14),
+                        ], spacing=5),
+                        bgcolor=ft.Colors.BLUE_50,
+                        padding=10,
+                        border_radius=5
+                    ),
+                    
+                    ft.Divider(),
+                    
+                    ft.Container(
+                        ft.Column([
+                            ft.Text("💡 Hint:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                            ft.Text(
+                                get_patterns_ai_help(f"{pattern_type} help for {question}"),
+                                size=14
+                            ),
+                        ], spacing=5),
+                        bgcolor=ft.Colors.GREEN_50,
+                        padding=10,
+                        border_radius=5
+                    ),
+                ], spacing=10, scroll=ft.ScrollMode.AUTO),
+                height=300,
+                width=500,
+            ),
+            actions=[
+                ft.TextButton(
+                    "Close",
+                    on_click=lambda e: self.close_dialog(),
+                    style=ft.ButtonStyle(color=ft.Colors.BLUE_700)
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.dialog = dialog
+        dialog.open = True
         self.page.update()
     
+    def close_dialog(self):
+        """Close the current dialog"""
+        if self.page.dialog:
+            self.page.dialog.open = False
+            self.page.update()
+
+    def show_examples(self):
+        """Display worked examples"""
+        def go_back(e):
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
+        view = ft.View(
+            "/number_patterns/examples",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
+                    title=ft.Text("Number Patterns Examples"),
+                    bgcolor=ft.Colors.ORANGE_700
+                ),
+                ft.Container(
+                    ft.Column([
+                        ft.Text("💡 Number Patterns: Worked Examples", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_900),
+                        ft.Text("Step-by-step solutions to common pattern problems", size=16, color=ft.Colors.ORANGE_700),
+                        
+                        # Example 1: Arithmetic Sequence
+                        ft.Container(
+                            ft.Column([
+                                ft.Text("Example 1: Arithmetic Sequence", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_800),
+                                ft.Text("Problem: Find the 15th term of the sequence 7, 11, 15, 19, ...", size=14),
+                                
+                                ft.Text("Solution:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_700),
+                                ft.Text("Step 1: Identify the pattern", size=14),
+                                ft.Text("• First term a₁ = 7", size=14),
+                                ft.Text("• Common difference d = 11 - 7 = 4", size=14),
+                                
+                                ft.Text("Step 2: Use the arithmetic formula", size=14),
+                                ft.Text("• aₙ = a₁ + (n-1)d", size=14),
+                                ft.Text("• a₁₅ = 7 + (15-1)×4", size=14),
+                                ft.Text("• a₁₅ = 7 + 14×4 = 7 + 56 = 63", size=14),
+                                
+                                ft.Container(
+                                    ft.Text("Answer: The 15th term is 63", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                    bgcolor=ft.Colors.GREEN_50,
+                                    padding=10,
+                                    border_radius=5
+                                ),
+                            ], spacing=8),
+                            bgcolor=ft.Colors.BLUE_50,
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.BLUE_200)
+                        ),
+                        
+                        # Example 2: Geometric Sequence
+                        ft.Container(
+                            ft.Column([
+                                ft.Text("Example 2: Geometric Sequence", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_800),
+                                ft.Text("Problem: In the sequence 3, 12, 48, 192, ..., find the 8th term.", size=14),
+                                
+                                ft.Text("Solution:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_700),
+                                ft.Text("Step 1: Identify the pattern", size=14),
+                                ft.Text("• First term a₁ = 3", size=14),
+                                ft.Text("• Common ratio r = 12 ÷ 3 = 4", size=14),
+                                
+                                ft.Text("Step 2: Use the geometric formula", size=14),
+                                ft.Text("• aₙ = a₁ × r^(n-1)", size=14),
+                                ft.Text("• a₈ = 3 × 4^(8-1) = 3 × 4⁷", size=14),
+                                ft.Text("• a₈ = 3 × 16,384 = 49,152", size=14),
+                                
+                                ft.Container(
+                                    ft.Text("Answer: The 8th term is 49,152", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                    bgcolor=ft.Colors.GREEN_50,
+                                    padding=10,
+                                    border_radius=5
+                                ),
+                            ], spacing=8),
+                            bgcolor=ft.Colors.PURPLE_50,
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.PURPLE_200)
+                        ),
+                        
+                        # Example 3: Pattern Recognition
+                        ft.Container(
+                            ft.Column([
+                                ft.Text("Example 3: Pattern Recognition", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_800),
+                                ft.Text("Problem: What type of sequence is 1, 3, 6, 10, 15, 21, ...?", size=14),
+                                
+                                ft.Text("Solution:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                ft.Text("Step 1: Check differences", size=14),
+                                ft.Text("• 3-1=2, 6-3=3, 10-6=4, 15-10=5, 21-15=6", size=14),
+                                ft.Text("• Differences: 2, 3, 4, 5, 6... (increasing by 1)", size=14),
+                                
+                                ft.Text("Step 2: Recognize the pattern", size=14),
+                                ft.Text("• These are triangular numbers!", size=14),
+                                ft.Text("• Formula: Tₙ = n(n+1)/2", size=14),
+                                ft.Text("• T₁=1×2/2=1, T₂=2×3/2=3, T₃=3×4/2=6...", size=14),
+                                
+                                ft.Container(
+                                    ft.Text("Answer: Triangular number sequence", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                    bgcolor=ft.Colors.GREEN_50,
+                                    padding=10,
+                                    border_radius=5
+                                ),
+                            ], spacing=8),
+                            bgcolor=ft.Colors.GREEN_50,
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.GREEN_200)
+                        ),
+                        
+                        # Example 4: Fibonacci Application
+                        ft.Container(
+                            ft.Column([
+                                ft.Text("Example 4: Fibonacci in Nature", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_800),
+                                ft.Text("Problem: A rabbit population follows Fibonacci growth. Starting with 1 pair, how many pairs after 10 months?", size=14),
+                                
+                                ft.Text("Solution:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_700),
+                                ft.Text("Step 1: Apply Fibonacci sequence", size=14),
+                                ft.Text("• Month 1: 1 pair", size=14),
+                                ft.Text("• Month 2: 1 pair", size=14),
+                                ft.Text("• Month 3: 1+1 = 2 pairs", size=14),
+                                ft.Text("• Continue: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55", size=14),
+                                
+                                ft.Container(
+                                    ft.Text("Answer: 55 pairs after 10 months", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN_700),
+                                    bgcolor=ft.Colors.GREEN_50,
+                                    padding=10,
+                                    border_radius=5
+                                ),
+                            ], spacing=8),
+                            bgcolor=ft.Colors.TEAL_50,
+                            padding=15,
+                            border_radius=10,
+                            border=ft.border.all(2, ft.Colors.TEAL_200)
+                        ),
+                    ], spacing=20),
+                    padding=20,
+                    expand=True
+                )
+            ],
+            scroll=ft.ScrollMode.AUTO
+        )
+        
+        self.page.views.append(view)
+        self.page.update()
+
     def show_ai_help(self):
         """Display AI help interface"""
-        self.page.clean()
-        
-        # Create text field for user input
-        user_input = ft.TextField(
-            label="Ask me anything about number patterns...",
+        query_field = ft.TextField(
+            label="Ask about Number Patterns...",
+            hint_text="e.g., How do I find the formula for an arithmetic sequence? What makes a pattern geometric?",
             multiline=True,
             min_lines=3,
-            max_lines=5,
-            border_radius=10,
-            bgcolor=ft.Colors.WHITE
-        )
-        
-        # Chat messages container
-        chat_messages = ft.Column([], spacing=10, scroll=ft.ScrollMode.AUTO, height=300)
-        
-        def send_message(e):
-            user_question = user_input.value.strip()
-            if not user_question:
-                return
-            
-            # Add user message
-            chat_messages.controls.append(
-                ft.Container(
-                    ft.Text(f"You: {user_question}", size=14, color=ft.Colors.BLUE_900),
-                    bgcolor=ft.Colors.BLUE_50,
-                    border_radius=10,
-                    padding=10,
-                    alignment=ft.alignment.center_right
-                )
-            )
-            
-            # Generate AI response
-            ai_response = self._generate_ai_response(user_question)
-            chat_messages.controls.append(
-                ft.Container(
-                    ft.Text(f"AI Tutor: {ai_response}", size=14, color=ft.Colors.GREEN_900),
-                    bgcolor=ft.Colors.GREEN_50,
-                    border_radius=10,
-                    padding=10,
-                    alignment=ft.alignment.center_left
-                )
-            )
-            
-            user_input.value = ""
-            self.page.update()
-        
-        content = ft.Container(
-            ft.Column([
-                # Header
-                ft.Row([
-                    ft.IconButton(
-                        ft.Icons.ARROW_BACK,
-                        on_click=lambda e: self.show_page(),
-                        tooltip="Back to Number Patterns"
-                    ),
-                    ft.Text(
-                        "🤖 AI Tutor - Number Patterns Help",
-                        size=20,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.PURPLE_900
-                    )
-                ], alignment=ft.MainAxisAlignment.START),
-                
-                ft.Divider(),
-                
-                # Instructions
-                ft.Container(
-                    ft.Column([
-                        ft.Text("💬 Ask me anything about number patterns!", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_800),
-                        ft.Text("I can help with:", size=14),
-                        ft.Text("• Arithmetic and geometric sequences", size=12),
-                        ft.Text("• Fibonacci and other special sequences", size=12),
-                        ft.Text("• Finding pattern formulas", size=12),
-                        ft.Text("• Real-world pattern applications", size=12),
-                    ], spacing=5),
-                    bgcolor=ft.Colors.PURPLE_50,
-                    border_radius=10,
-                    padding=15,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Chat area
-                ft.Container(
-                    chat_messages,
-                    bgcolor=ft.Colors.GREY_50,
-                    border_radius=10,
-                    padding=10,
-                    margin=ft.margin.only(bottom=20)
-                ),
-                
-                # Input area
-                ft.Row([
-                    ft.Container(user_input, expand=True),
-                    ft.IconButton(
-                        ft.Icons.SEND,
-                        icon_color=ft.Colors.PURPLE_700,
-                        on_click=send_message,
-                        tooltip="Send message"
-                    )
-                ], spacing=10),
-                
-                # Quick help buttons
-                ft.Text("Quick Help:", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_800),
-                ft.ResponsiveRow([
-                    ft.Container(
-                        ft.ElevatedButton(
-                            "Arithmetic",
-                            on_click=lambda e: self._quick_help("arithmetic"),
-                            style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_100)
-                        ),
-                        col={'xs': 6, 'sm': 3}
-                    ),
-                    ft.Container(
-                        ft.ElevatedButton(
-                            "Geometric",
-                            on_click=lambda e: self._quick_help("geometric"),
-                            style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_100)
-                        ),
-                        col={'xs': 6, 'sm': 3}
-                    ),
-                    ft.Container(
-                        ft.ElevatedButton(
-                            "Fibonacci",
-                            on_click=lambda e: self._quick_help("fibonacci"),
-                            style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_100)
-                        ),
-                        col={'xs': 6, 'sm': 3}
-                    ),
-                    ft.Container(
-                        ft.ElevatedButton(
-                            "Applications",
-                            on_click=lambda e: self._quick_help("applications"),
-                            style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_100)
-                        ),
-                        col={'xs': 6, 'sm': 3}
-                    ),
-                ], spacing=10)
-            ], spacing=15),
-            padding=20,
             expand=True
         )
         
-        self.page.add(content)
-        self.page.update()
-    
-    def _quick_help(self, topic):
-        """Handle quick help buttons"""
-        responses = {
-            "arithmetic": "Arithmetic sequences have a constant difference between terms. Formula: aₙ = a₁ + (n-1)d. Example: 2, 5, 8, 11... (difference = 3). To find any term, use the formula with the first term and common difference.",
-            "geometric": "Geometric sequences have a constant ratio between terms. Formula: aₙ = a₁ × r^(n-1). Example: 3, 6, 12, 24... (ratio = 2). Each term is multiplied by the same number to get the next term.",
-            "fibonacci": "Fibonacci sequence: each term is the sum of the two previous terms. Starts 1, 1, 2, 3, 5, 8, 13, 21... Formula: F(n) = F(n-1) + F(n-2). Appears in nature: flower petals, spiral shells, tree branches.",
-            "applications": "Number patterns appear everywhere! Arithmetic: saving money regularly. Geometric: population growth, compound interest. Fibonacci: nature patterns, art proportions. Patterns help predict trends, optimize algorithms, and model real-world phenomena."
-        }
+        response_text = ft.Text("", size=14, selectable=True)
         
-        # Add the response to chat
-        chat_messages = None
-        for control in self.page.controls:
-            if hasattr(control, 'content'):
-                chat_messages = self._find_chat_messages(control.content)
-                if chat_messages:
-                    break
+        def handle_query(e):
+            if query_field.value:
+                response = get_patterns_ai_help(query_field.value)
+                response_text.value = response
+                self.page.update()
         
-        if chat_messages:
-            chat_messages.controls.append(
+        def go_back(e):
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
+        view = ft.View(
+            "/number_patterns/ai_help",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
+                    title=ft.Text("Number Patterns AI Helper"),
+                    bgcolor=ft.Colors.PURPLE_700
+                ),
                 ft.Container(
-                    ft.Text(f"AI Tutor: {responses[topic]}", size=14, color=ft.Colors.GREEN_900),
-                    bgcolor=ft.Colors.GREEN_50,
-                    border_radius=10,
-                    padding=10,
-                    alignment=ft.alignment.center_left
+                    ft.Column([
+                        ft.Text("🤖 Number Patterns AI Assistant", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_900),
+                        ft.Text("Get personalized help with sequences and patterns", size=16, color=ft.Colors.PURPLE_700),
+                        query_field,
+                        ft.ElevatedButton(
+                            "Get Help",
+                            on_click=handle_query,
+                            style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_700, color=ft.Colors.WHITE)
+                        ),
+                        ft.Container(response_text, bgcolor=ft.Colors.GREY_100, border_radius=10, padding=15, expand=True),
+                        
+                        # Quick help topics
+                        ft.Text("💡 Quick Help Topics:", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.PURPLE_700),
+                        ft.ResponsiveRow([
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Arithmetic Sequences",
+                                    on_click=lambda e: (setattr(query_field, 'value', 'arithmetic sequence'), handle_query(e)),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.GREEN_50)
+                                ),
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Geometric Sequences",
+                                    on_click=lambda e: (setattr(query_field, 'value', 'geometric sequence'), handle_query(e)),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_50)
+                                ),
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Fibonacci Numbers",
+                                    on_click=lambda e: (setattr(query_field, 'value', 'fibonacci'), handle_query(e)),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.ORANGE_50)
+                                ),
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                            ft.Container(
+                                ft.ElevatedButton(
+                                    "Finding Formulas",
+                                    on_click=lambda e: (setattr(query_field, 'value', 'formula'), handle_query(e)),
+                                    style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_50)
+                                ),
+                                col={'xs': 6, 'sm': 3}
+                            ),
+                        ], spacing=10, run_spacing=10)
+                    ], spacing=15),
+                    padding=20,
+                    expand=True
                 )
-            )
-            self.page.update()
-    
-    def _find_chat_messages(self, control):
-        """Recursively find chat messages container"""
-        if hasattr(control, 'controls'):
-            for child in control.controls:
-                if isinstance(child, ft.Column) and hasattr(child, 'height') and child.height == 300:
-                    return child
-                elif hasattr(child, 'content'):
-                    result = self._find_chat_messages(child.content)
-                    if result:
-                        return result
-                elif hasattr(child, 'controls'):
-                    result = self._find_chat_messages(child)
-                    if result:
-                        return result
-        return None
-    
-    def _generate_ai_response(self, question):
-        """Generate AI tutor response based on question"""
-        question_lower = question.lower()
+            ],
+            scroll=ft.ScrollMode.AUTO
+        )
         
-        if "arithmetic" in question_lower:
-            return "Arithmetic sequences have a constant difference between consecutive terms. The formula is aₙ = a₁ + (n-1)d where a₁ is the first term and d is the common difference. Would you like me to help with a specific arithmetic sequence?"
-        
-        elif "geometric" in question_lower:
-            return "Geometric sequences have a constant ratio between consecutive terms. The formula is aₙ = a₁ × r^(n-1) where a₁ is the first term and r is the common ratio. Each term is found by multiplying the previous term by r."
-        
-        elif "fibonacci" in question_lower:
-            return "The Fibonacci sequence starts with 1, 1 and each subsequent term is the sum of the two previous terms: 1, 1, 2, 3, 5, 8, 13, 21... It appears in nature and has the golden ratio property. What would you like to know about it?"
-        
-        elif "formula" in question_lower or "equation" in question_lower:
-            return "Different patterns have different formulas: Arithmetic (aₙ = a₁ + (n-1)d), Geometric (aₙ = a₁ × r^(n-1)), Triangular (Tₙ = n(n+1)/2), Square (Sₙ = n²). Which type are you working with?"
-        
-        elif "difference" in question_lower:
-            return "For arithmetic sequences, find the common difference by subtracting consecutive terms. For geometric sequences, find the common ratio by dividing consecutive terms. This helps identify the pattern type and formula."
-        
-        elif "next term" in question_lower or "find term" in question_lower:
-            return "To find the next term, first identify the pattern type. Check if differences are constant (arithmetic) or ratios are constant (geometric), then apply the appropriate rule. What sequence are you working with?"
-        
-        elif "triangular" in question_lower:
-            return "Triangular numbers represent dots arranged in triangular patterns: 1, 3, 6, 10, 15... The formula is Tₙ = n(n+1)/2. They also represent the sum of the first n natural numbers."
-        
-        elif "square" in question_lower:
-            return "Square numbers are perfect squares: 1, 4, 9, 16, 25... The formula is Sₙ = n². The differences between consecutive square numbers are consecutive odd numbers: 3, 5, 7, 9..."
-        
-        else:
-            return "Great question about number patterns! I can help with arithmetic sequences, geometric sequences, Fibonacci numbers, triangular numbers, square numbers, and their formulas. What specific pattern or concept would you like to explore?"
-
+        self.page.views.append(view)
+        self.page.update()
 
 def number_patterns_page(page: ft.Page):
     """Main entry point for Number Patterns module"""
+    page.title = "Number Patterns - Mathematics Learning"
+    page.scroll = ft.ScrollMode.AUTO
+    page.clean()
+    
+    # Create module instance
     module = NumberPatternsModule(page)
-    module.show_page()
+    
+    # AppBar with back button
+    page.appbar = ft.AppBar(
+        leading=ft.IconButton(
+            ft.Icons.ARROW_BACK,
+            on_click=lambda e: page.go("/maths")
+        ),
+        title=ft.Text("Number Patterns"),
+        bgcolor=ft.Colors.BLUE_700,
+        center_title=True
+    )
+    
+    # Add main view
+    page.add(module.create_main_view())

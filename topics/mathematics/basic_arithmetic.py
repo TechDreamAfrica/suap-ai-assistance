@@ -8,7 +8,7 @@ def get_arithmetic_ai_help(query, topic="basic_arithmetic"):
         responses = {
             "addition": "Addition is combining two or more numbers to get their sum. Start with smaller numbers and use strategies like counting on, making 10, or using number lines.",
             "subtraction": "Subtraction is taking away one number from another. Think of it as the opposite of addition. Use strategies like counting back, number lines, or borrowing in multi-digit problems.",
-            "multiplication": "Multiplication is repeated addition. For example, 3 × 4                                    on_click=lambda e: self.page.go_back(),means adding 3 four times (3+3+3+3=12). Learn times tables and use strategies like skip counting.",
+            "multiplication": "Multiplication is repeated addition. For example, 3 × 4 means adding 3 four times (3+3+3+3=12). Learn times tables and use strategies like skip counting.",
             "division": "Division is splitting a number into equal groups. It's the opposite of multiplication. For example, 12 ÷ 3 means how many groups of 3 can you make from 12?",
             "order": "Order of operations follows PEMDAS: Parentheses, Exponents, Multiplication/Division (left to right), Addition/Subtraction (left to right).",
             "decimal": "Decimals represent parts of whole numbers. The place value determines the decimal's worth - tenths, hundredths, thousandths, etc.",
@@ -27,70 +27,14 @@ def get_arithmetic_ai_help(query, topic="basic_arithmetic"):
     except Exception:
         return f"🤖 Math AI Helper: I'm here to help with basic arithmetic! Ask about specific operations or concepts."
 
-def basic_arithmetic_page(page: ft.Page):
-    """Basic Arithmetic learning page"""
-    page.title = f"Basic Arithmetic - Mathematics Learning"
-    page.scroll = ft.ScrollMode.AUTO
-    
-    # Clear page content first
-    page.clean()
-    
-    # Create module instance
-    module = BasicArithmeticModule(page)
-    
-    # AppBar with back button
-    page.appbar = ft.AppBar(
-        leading=ft.IconButton(
-            ft.Icons.ARROW_BACK,
-            on_click=lambda e: page.go_back()  # Use page.go_back() for root page navigation
-        ),
-        title=ft.Text("Basic Arithmetic"),
-        bgcolor=ft.Colors.BLUE_700,
-        center_title=True
-    )
-    
-    # Add main view
-    page.add(module.create_main_view())
-
 class BasicArithmeticModule:
     def __init__(self, page=None):
         self.page = page
         self.current_quiz_level = "basic"
         self.quiz_score = 0
         self.quiz_question_index = 0
-        
-    def show_page(self):
-        """Main entry point for the module"""
-        self.show_main_page()
-        
-    def show_main_page(self, page=None):
-        """Show the main basic arithmetic page
-        Args:
-            page: Optional page reference. If not provided, uses self.page
-        """
-        if page is None:
-            page = self.page
-        self.page = page  # Update the page reference
-            
-        view = ft.View(
-            "/basic_arithmetic",
-            [
-                ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
-                    title=ft.Text("Basic Arithmetic"),
-                    bgcolor=ft.Colors.BLUE_700,
-                    center_title=True
-                ),
-                self.create_main_view()
-            ]
-        )
-        
-        # Clear existing views and show main view
-        page.views.clear()
-        page.views.append(view)
-        page.update()
         self.current_correct_index = 0
-        self.current_shuffled_options = []  # Store shuffled options for feedback
+        self.current_shuffled_options = []
         
         # Comprehensive quiz questions (50+ questions across different levels)
         self.quiz_questions = {
@@ -288,7 +232,29 @@ class BasicArithmeticModule:
             expand=True
         )
 
-    # AI Help methods
+    def show_main_page(self, page=None):
+        """Show the main arithmetic page"""
+        if page is None:
+            page = self.page
+
+        view = ft.View(
+            "/basic_arithmetic",
+            [
+                ft.AppBar(
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.page.go("/")),
+                    title=ft.Text("Basic Arithmetic"),
+                    bgcolor=ft.Colors.BLUE_700,
+                    center_title=True
+                ),
+                self.create_main_view()
+            ]
+        )
+        
+        # Clear existing views and show main view
+        page.views.clear()
+        page.views.append(view)
+        page.update()
+
     def show_ai_help(self):
         query_field = ft.TextField(
             label="Ask about Basic Arithmetic...",
@@ -306,11 +272,19 @@ class BasicArithmeticModule:
                 response_text.value = response
                 self.page.update()
         
+        def go_back(e):
+            """Properly navigate back to the main basic arithmetic page"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
         view = ft.View(
             "/basic_arithmetic/ai_help",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
                     title=ft.Text("Math AI Helper - Basic Arithmetic"),
                     bgcolor=ft.Colors.BLUE_700
                 ),
@@ -373,39 +347,20 @@ class BasicArithmeticModule:
         self.page.views.append(view)
         self.page.update()
 
-    def show_main_page(self, page=None):
-        """Show the main arithmetic page
-        Args:
-            page: Optional page reference. If not provided, uses self.page
-        """
-        if page is None:
-            page = self.page
-
-        # Set up the main page view
-        view = ft.View(
-            "/basic_arithmetic",
-            [
-                ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go_back()),
-                    title=ft.Text("Basic Arithmetic"),
-                    bgcolor=ft.Colors.BLUE_700,
-                    center_title=True
-                ),
-                self.create_main_view()
-            ]
-        )
-        
-        # Clear existing views and show main view
-        page.views.clear()
-        page.views.append(view)
-        page.update()
-
     def show_quizzes(self):
+        def go_back(e):
+            """Properly navigate back to the main page"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
         view = ft.View(
             "/basic_arithmetic/quizzes",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.show_main_page()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
                     title=ft.Text("Basic Arithmetic Quizzes"),
                     bgcolor=ft.Colors.GREEN_700
                 ),
@@ -534,11 +489,19 @@ class BasicArithmeticModule:
                 )
             )
         
+        def go_back(e):
+            """Navigate back to quizzes page"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_quizzes()
+        
         view = ft.View(
             f"/basic_arithmetic/quiz/{self.current_quiz_level}",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self.show_quizzes()),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back),
                     title=ft.Text(f"{self.current_quiz_level.title()} Quiz"),
                     bgcolor=ft.Colors.GREEN_700
                 ),
@@ -619,7 +582,6 @@ class BasicArithmeticModule:
         if is_correct:
             self.quiz_score += 1
         
-        # Store the original data for feedback display
         self.show_answer_feedback(question_data, selected_index, is_correct)
 
     def show_answer_feedback(self, question_data, selected_index, is_correct):
@@ -631,11 +593,19 @@ class BasicArithmeticModule:
         correct_answer = question_data["options"][question_data["correct"]]
         user_selected_answer = self.current_shuffled_options[selected_index]
         
+        def go_back_from_feedback(e):
+            """Navigate back from feedback to quiz"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_quiz_question()
+        
         view = ft.View(
             f"/basic_arithmetic/quiz/{self.current_quiz_level}/feedback",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back_from_feedback),
                     title=ft.Text("Answer Feedback"),
                     bgcolor=feedback_color
                 ),
@@ -712,11 +682,19 @@ class BasicArithmeticModule:
             grade_color = ft.Colors.RED_600
             message = "Don't give up! Review the learning materials and practice more!"
         
+        def go_back_from_results(e):
+            """Navigate back from results"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_quizzes()
+        
         view = ft.View(
             f"/basic_arithmetic/quiz/{self.current_quiz_level}/results",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back_from_results),
                     title=ft.Text("Quiz Results"),
                     bgcolor=grade_color
                 ),
@@ -755,7 +733,7 @@ class BasicArithmeticModule:
                             ft.Container(
                                 ft.ElevatedButton(
                                     "Back to Main",
-                                    on_click=lambda e: (self.page.views.pop(), self.page.update()),
+                                    on_click=lambda e: self.show_main_page(),
                                     style=ft.ButtonStyle(bgcolor=ft.Colors.PURPLE_700, color=ft.Colors.WHITE, padding=15)
                                 ),
                                 col={'xs': 12, 'sm': 6, 'md': 4}
@@ -857,36 +835,6 @@ class BasicArithmeticModule:
         self.page.dialog = dialog
         dialog.open = True
         self.page.update()
-        """Show AI help dialog for quiz questions"""
-        dialog = ft.AlertDialog(
-            title=ft.Text("🤖 AI Math Helper"),
-            content=ft.Column([
-                ft.Text("Question:", size=14, weight=ft.FontWeight.BOLD),
-                ft.Text(question, size=14),
-                ft.Divider(),
-                ft.Text("Hint:", size=14, weight=ft.FontWeight.BOLD),
-                ft.Text(
-                    get_arithmetic_ai_help(f"Give a helpful hint for solving this math problem without giving away the answer: {question}"),
-                    size=14,
-                    selectable=True
-                ),
-                ft.Divider(),
-                ft.Text("Need More Help?", size=14, weight=ft.FontWeight.BOLD),
-                ft.Text(
-                    "Try breaking down the problem into smaller steps. Remember to use the concepts we've learned!",
-                    size=14,
-                    color=ft.Colors.BLUE_700
-                )
-            ], tight=True, spacing=10),
-            actions=[
-                ft.TextButton("Close", on_click=lambda e: self.close_dialog())
-            ],
-            actions_alignment=ft.MainAxisAlignment.END
-        )
-        
-        self.page.dialog = dialog
-        dialog.open = True
-        self.page.update()
     
     def close_dialog(self):
         """Close the current dialog"""
@@ -895,11 +843,19 @@ class BasicArithmeticModule:
             self.page.update()
 
     def show_learning_content(self):
+        def go_back_from_learning(e):
+            """Navigate back from learning content"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
         view = ft.View(
             "/basic_arithmetic/learn",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back_from_learning),
                     title=ft.Text("Learn Basic Arithmetic"),
                     bgcolor=ft.Colors.PURPLE_700
                 ),
@@ -1097,6 +1053,14 @@ class BasicArithmeticModule:
         self.page.update()
 
     def show_practice_test(self):
+        def go_back_from_practice_test(e):
+            """Navigate back from practice test"""
+            if len(self.page.views) > 1:
+                self.page.views.pop()
+                self.page.update()
+            else:
+                self.show_main_page()
+        
         # Mix questions from all levels for comprehensive test
         all_questions = []
         for level in self.quiz_questions:
@@ -1108,13 +1072,11 @@ class BasicArithmeticModule:
         self.quiz_score = 0
         self.quiz_question_index = 0
         
-        self.page.views.clear()
-        
         view = ft.View(
             "/basic_arithmetic/practice_test",
             [
                 ft.AppBar(
-                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: (self.page.views.pop(), self.page.update())),
+                    leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=go_back_from_practice_test),
                     title=ft.Text("Practice Test"),
                     bgcolor=ft.Colors.ORANGE_700
                 ),
@@ -1164,7 +1126,6 @@ class BasicArithmeticModule:
         self.page.views.append(view)
         self.page.update()
 
-# Make sure the page function is available for routing
 def basic_arithmetic_page(page: ft.Page):
     """Basic Arithmetic learning page"""
     page.title = f"Basic Arithmetic - Mathematics Learning"
